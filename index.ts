@@ -12,6 +12,27 @@ const urls = {
   services: "https://mob.yalehomesystem.co.uk/yapi/services/"
 };
 
+export namespace MediaType {
+  export const enum Application {
+    json = "application/json",
+    xml = "application/xml",
+    formurlencoded = "application/x-www-form-urlencoded"
+  }
+
+  export const enum Text {
+    plain = "text/plain",
+    html = "text/html"
+  }
+}
+
+function headersWithAccessToken(accessToken: string) {
+  return {
+    Authorization: `Bearer ${accessToken}`,
+    Accept: `${MediaType.Application.json}, ${MediaType.Application.xml}, ${MediaType.Text.plain}, ${MediaType.Text.html}, *.*`,
+    "Content-Type": `${MediaType.Application.formurlencoded}; charset=UTF-8`
+  };
+}
+
 export function getAccessToken(username: string, password: string) {
   let payload = `grant_type=password&username=${encodeURIComponent(
     username
@@ -32,12 +53,7 @@ export function getAccessToken(username: string, password: string) {
       } else {
         fetch(urls.services, {
           method: "GET",
-          headers: {
-            Authorization: "Bearer " + access_token,
-            Accept:
-              "application/json, application/xml, text/plain, text/html, *.*",
-            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
-          }
+          headers: headersWithAccessToken(access_token)
         });
         return json.access_token;
       }
@@ -67,11 +83,7 @@ export function setStatus(access_token: string, alarmstate: AlamState) {
     return fetch(urls.setStatus, {
       method: "POST",
       body: `area=1&mode=${alarmstate}`,
-      headers: {
-        Authorization: "Bearer " + access_token,
-        Accept: "application/json, application/xml, text/plain, text/html, *.*",
-        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
-      }
+      headers: headersWithAccessToken(access_token)
     })
       .then(res => res.json())
       .then(json => {
@@ -89,11 +101,7 @@ export function getStatus(access_token: string) {
 
     return fetch(urls.getStatus, {
       method: "GET",
-      headers: {
-        Authorization: "Bearer " + access_token,
-        Accept: "application/json, application/xml, text/plain, text/html, *.*",
-        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
-      }
+      headers: headersWithAccessToken(access_token)
     })
       .then(res => res.json())
       .then(json => {
