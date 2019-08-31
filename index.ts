@@ -11,7 +11,7 @@ const urls = {
   services: "https://mob.yalehomesystem.co.uk/yapi/services/"
 };
 
-function getAccessToken(username, password) {
+function getAccessToken(username: string, password: string) {
   payload = `grant_type=password&username=${encodeURIComponent(
     username
   )}&password=${encodeURIComponent(password)}`;
@@ -43,7 +43,7 @@ function getAccessToken(username, password) {
     });
 }
 
-function setStatus(access_token, alarmstate) {
+function setStatus(access_token: string, alarmstate: string) {
   return new Promise((resolve, reject) => {
     if (!access_token || access_token.length === 0) {
       reject("Please call getAccessToken to get your access token first");
@@ -74,7 +74,7 @@ function setStatus(access_token, alarmstate) {
   });
 }
 
-function getStatus(access_token) {
+function getStatus(access_token: string) {
   return new Promise((resolve, reject) => {
     if (!access_token || access_token.length === 0) {
       reject("Please call getAccessToken to get your access token first");
