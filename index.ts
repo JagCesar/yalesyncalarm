@@ -44,7 +44,13 @@ export function getAccessToken(username: string, password: string) {
     });
 }
 
-export function setStatus(access_token: string, alarmstate: string) {
+export const enum AlamState {
+  arm = "arm",
+  home = "home",
+  disarm = "disarm"
+}
+
+export function setStatus(access_token: string, alarmstate: AlamState) {
   return new Promise((resolve, reject) => {
     if (!access_token || access_token.length === 0) {
       reject("Please call getAccessToken to get your access token first");
