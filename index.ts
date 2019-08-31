@@ -31,7 +31,10 @@ function headersWithAccessToken(accessToken: string) {
   };
 }
 
-export function getAccessToken(username: string, password: string) {
+export function getAccessToken(
+  username: string,
+  password: string
+): Promise<any> {
   let payload = `grant_type=password&username=${encodeURIComponent(
     username
   )}&password=${encodeURIComponent(password)}`;
@@ -60,7 +63,10 @@ export const enum AlamState {
   disarm = "disarm"
 }
 
-export function setStatus(access_token: string, alarmstate: AlamState) {
+export function setStatus(
+  access_token: string,
+  alarmstate: AlamState
+): Promise<any> {
   return new Promise((resolve, reject) => {
     if (!access_token || access_token.length === 0) {
       reject("Please call getAccessToken to get your access token first");
@@ -87,7 +93,7 @@ export function setStatus(access_token: string, alarmstate: AlamState) {
   });
 }
 
-export function getStatus(access_token: string) {
+export function getStatus(access_token: string): Promise<any> {
   return new Promise((resolve, reject) => {
     if (!access_token || access_token.length === 0) {
       reject("Please call getAccessToken to get your access token first");
