@@ -51,10 +51,6 @@ export function getAccessToken(username: string, password: string) {
       if (json.error === "invalid_grant") {
         return Promise.reject(json.error_description);
       } else {
-        fetch(urls.services, {
-          method: "GET",
-          headers: headersWithAccessToken(access_token)
-        });
         return json.access_token;
       }
     });
