@@ -26,6 +26,7 @@ export async function getAccessToken(
   let payload = `grant_type=password&username=${encodeURIComponent(
     username
   )}&password=${encodeURIComponent(password)}`;
+
   let response = await fetch(url(Path.auth), {
     method: "POST",
     body: payload,
