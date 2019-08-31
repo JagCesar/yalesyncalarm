@@ -3,12 +3,15 @@ import * as NodeFetch from "node-fetch";
 const yaleAuthToken =
   "VnVWWDZYVjlXSUNzVHJhcUVpdVNCUHBwZ3ZPakxUeXNsRU1LUHBjdTpkd3RPbE15WEtENUJ5ZW1GWHV0am55eGhrc0U3V0ZFY2p0dFcyOXRaSWNuWHlSWHFsWVBEZ1BSZE1xczF4R3VwVTlxa1o4UE5ubGlQanY5Z2hBZFFtMHpsM0h4V3dlS0ZBcGZzakpMcW1GMm1HR1lXRlpad01MRkw3MGR0bmNndQ==";
 
-const urls = {
-  auth: "https://mob.yalehomesystem.co.uk/yapi/o/token/",
-  getStatus: "https://mob.yalehomesystem.co.uk/yapi/api/panel/mode/",
-  setStatus: "https://mob.yalehomesystem.co.uk/yapi/api/panel/mode/",
-  deviceStatus: "https://mob.yalehomesystem.co.uk/yapi/api/panel/device_status"
-};
+const enum Path {
+  auth = "o/token",
+  panelMode = "api/panel/mode",
+  deviceStatus = "api/panel/device_status"
+}
+
+function url(path: Path): string {
+  return `https://mob.yalehomesystem.co.uk/yapi/${path}/`;
+}
 
 function headersWithAccessToken(accessToken: string): Headers {
   return new Headers({
@@ -23,7 +26,7 @@ export async function getAccessToken(
   let payload = `grant_type=password&username=${encodeURIComponent(
     username
   )}&password=${encodeURIComponent(password)}`;
-  let response = await fetch(urls.auth, {
+  let response = await fetch(url(Path.auth), {
     method: "POST",
     body: payload,
     headers: {
@@ -54,7 +57,7 @@ export async function setStatus(
     );
   }
 
-  let response = await fetch(urls.setStatus, {
+  let response = await fetch(url(Path.panelMode), {
     method: "POST",
     body: `area=1&mode=${alarmState}`,
     headers: headersWithAccessToken(accessToken)
@@ -71,7 +74,7 @@ export async function getStatus(accessToken: string): Promise<any> {
     );
   }
 
-  let response = await fetch(urls.getStatus, {
+  let response = await fetch(url(Path.panelMode), {
     method: "GET",
     headers: headersWithAccessToken(accessToken)
   });
