@@ -12,7 +12,7 @@ const urls = {
 };
 
 function getAccessToken(username: string, password: string) {
-  payload = `grant_type=password&username=${encodeURIComponent(
+  let payload = `grant_type=password&username=${encodeURIComponent(
     username
   )}&password=${encodeURIComponent(password)}`;
   return fetch(urls.auth, {
