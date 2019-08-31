@@ -7,6 +7,7 @@ const urls = {
   auth: "https://mob.yalehomesystem.co.uk/yapi/o/token/",
   getStatus: "https://mob.yalehomesystem.co.uk/yapi/api/panel/mode/",
   setStatus: "https://mob.yalehomesystem.co.uk/yapi/api/panel/mode/",
+  deviceStatus: "https://mob.yalehomesystem.co.uk/yapi/api/panel/device_status"
 };
 
 function headersWithAccessToken(accessToken: string): Headers {
@@ -92,3 +93,13 @@ export function getStatus(access_token: string): Promise<any> {
       });
   });
 }
+
+// export function getDevices(access_token: string): Promise<any> {
+//   return fetch(urls.deviceStatus, {
+//     method: "GET",
+//     headers: headersWithAccessToken(access_token)
+//   }).then(res => res.json())
+//   .then(json => {
+//     return json
+//   })
+// }
