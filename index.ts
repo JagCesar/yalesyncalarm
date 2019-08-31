@@ -45,35 +45,27 @@ export const enum AlamState {
 }
 
 export async function setStatus(
-  access_token: string,
-  alarmstate: AlamState
+  accessToken: string,
+  alarmState: AlamState
 ): Promise<any> {
-  if (!access_token || access_token.length === 0) {
+  if (!accessToken || accessToken.length === 0) {
     return Promise.reject(
       "Please call getAccessToken to get your access token first"
     );
   }
 
-  if (
-    alarmstate !== "arm" &&
-    alarmstate !== "home" &&
-    alarmstate !== "disarm"
-  ) {
-    return Promise.reject("Invalid mode passed to setStatus");
-  }
-
   let response = await fetch(urls.setStatus, {
     method: "POST",
-    body: `area=1&mode=${alarmstate}`,
-    headers: headersWithAccessToken(access_token)
+    body: `area=1&mode=${alarmState}`,
+    headers: headersWithAccessToken(accessToken)
   });
   let json = await response.json();
   let setStatus = json.data.cmd_ack;
   return setStatus;
 }
 
-export async function getStatus(access_token: string): Promise<any> {
-  if (!access_token || access_token.length === 0) {
+export async function getStatus(accessToken: string): Promise<any> {
+  if (!accessToken || accessToken.length === 0) {
     return Promise.reject(
       "Please call getAccessToken to get your access token first"
     );
@@ -81,7 +73,7 @@ export async function getStatus(access_token: string): Promise<any> {
 
   let response = await fetch(urls.getStatus, {
     method: "GET",
-    headers: headersWithAccessToken(access_token)
+    headers: headersWithAccessToken(accessToken)
   });
   let json = await response.json();
   let alarmState = json.data[0].mode;
