@@ -32,7 +32,7 @@ export async function getAccessToken(
   });
   let json = await response.json();
   if (json.error === "invalid_grant") {
-    return Promise.reject(json.error_description);
+    throw new Error(json.error_description);
   } else {
     return json.access_token;
   }
@@ -49,8 +49,8 @@ export async function setStatus(
   alarmState: AlamState
 ): Promise<any> {
   if (!accessToken || accessToken.length === 0) {
-    return Promise.reject(
-      "Please call getAccessToken to get your access token first"
+    throw new Error(
+      "Please call getAccessToken to get your access token first."
     );
   }
 
@@ -66,8 +66,8 @@ export async function setStatus(
 
 export async function getStatus(accessToken: string): Promise<any> {
   if (!accessToken || accessToken.length === 0) {
-    return Promise.reject(
-      "Please call getAccessToken to get your access token first"
+    throw new Error(
+      "Please call getAccessToken to get your access token first."
     );
   }
 
