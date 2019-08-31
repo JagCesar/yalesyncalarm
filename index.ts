@@ -69,7 +69,7 @@ function setStatus(access_token: string, alarmstate: string) {
     })
       .then(res => res.json())
       .then(json => {
-        setStatus = json.data.cmd_ack;
+        let setStatus = json.data.cmd_ack;
         resolve(setStatus);
       });
   });
@@ -91,7 +91,7 @@ function getStatus(access_token: string) {
     })
       .then(res => res.json())
       .then(json => {
-        alarmState = json.data[0].mode;
+        let alarmState = json.data[0].mode;
         resolve(alarmState);
       });
   });
