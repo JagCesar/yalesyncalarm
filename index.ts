@@ -10,25 +10,10 @@ const urls = {
   services: "https://mob.yalehomesystem.co.uk/yapi/services/"
 };
 
-export namespace MediaType {
-  export const enum Application {
-    json = "application/json",
-    xml = "application/xml",
-    formurlencoded = "application/x-www-form-urlencoded"
-  }
-
-  export const enum Text {
-    plain = "text/plain",
-    html = "text/html"
-  }
-}
-
-function headersWithAccessToken(accessToken: string) {
-  return {
-    Authorization: `Bearer ${accessToken}`,
-    Accept: `${MediaType.Application.json}, ${MediaType.Application.xml}, ${MediaType.Text.plain}, ${MediaType.Text.html}, *.*`,
-    "Content-Type": `${MediaType.Application.formurlencoded}; charset=UTF-8`
-  };
+function headersWithAccessToken(accessToken: string): Headers {
+  return new Headers({
+    Authorization: `Bearer ${accessToken}`
+  });
 }
 
 export function getAccessToken(
@@ -42,9 +27,7 @@ export function getAccessToken(
     method: "POST",
     body: payload,
     headers: {
-      Authorization: "Basic " + yaleAuthToken,
-      Accept: "application/json, application/xml, text/plain, text/html, *.*",
-      "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
+      Authorization: "Basic " + yaleAuthToken
     }
   })
     .then(res => res.json())
