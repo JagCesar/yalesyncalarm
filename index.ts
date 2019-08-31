@@ -7,7 +7,6 @@ const urls = {
   auth: "https://mob.yalehomesystem.co.uk/yapi/o/token/",
   getStatus: "https://mob.yalehomesystem.co.uk/yapi/api/panel/mode/",
   setStatus: "https://mob.yalehomesystem.co.uk/yapi/api/panel/mode/",
-  services: "https://mob.yalehomesystem.co.uk/yapi/services/"
 };
 
 function headersWithAccessToken(accessToken: string): Headers {
