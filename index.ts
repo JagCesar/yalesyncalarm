@@ -42,7 +42,7 @@ export async function getAccessToken(
   }
 }
 
-export const enum AlamState {
+export const enum AlarmState {
   arm = "arm",
   home = "home",
   disarm = "disarm"
@@ -50,8 +50,8 @@ export const enum AlamState {
 
 export async function setStatus(
   accessToken: string,
-  alarmState: AlamState
-): Promise<any> {
+  alarmState: AlarmState
+): Promise<string> {
   if (!accessToken || accessToken.length === 0) {
     throw new Error(
       "Please call getAccessToken to get your access token first."
@@ -68,7 +68,7 @@ export async function setStatus(
   return setStatus;
 }
 
-export async function getStatus(accessToken: string): Promise<any> {
+export async function getStatus(accessToken: string): Promise<AlarmState> {
   if (!accessToken || accessToken.length === 0) {
     throw new Error(
       "Please call getAccessToken to get your access token first."
