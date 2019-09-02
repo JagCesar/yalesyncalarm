@@ -13,10 +13,10 @@ function url(path: Path): string {
 	return `https://mob.yalehomesystem.co.uk/yapi/${path}/`
 }
 
-function headersWithAccessToken(accessToken: string): Headers {
-	return new Headers({
+function headersWithAccessToken(accessToken: string): NodeFetch.HeadersInit {
+	return {
 		Authorization: `Bearer ${accessToken}`,
-	})
+	}
 }
 
 export async function getAccessToken(
@@ -27,7 +27,7 @@ export async function getAccessToken(
 		username
 	)}&password=${encodeURIComponent(password)}`
 
-	let response = await fetch(url(Path.auth), {
+	let response = await NodeFetch.default(url(Path.auth), {
 		method: 'POST',
 		body: payload,
 		headers: {
@@ -59,7 +59,7 @@ export async function setStatus(
 		)
 	}
 
-	let response = await fetch(url(Path.panelMode), {
+	let response = await NodeFetch.default(url(Path.panelMode), {
 		method: 'POST',
 		body: `area=1&mode=${alarmState}`,
 		headers: headersWithAccessToken(accessToken),
@@ -76,7 +76,7 @@ export async function getStatus(accessToken: string): Promise<AlarmState> {
 		)
 	}
 
-	let response = await fetch(url(Path.panelMode), {
+	let response = await NodeFetch.default(url(Path.panelMode), {
 		method: 'GET',
 		headers: headersWithAccessToken(accessToken),
 	})
