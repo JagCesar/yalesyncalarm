@@ -32,6 +32,7 @@ export async function getAccessToken(
 		body: payload,
 		headers: {
 			Authorization: `Basic ${yaleAuthToken}`,
+			'Content-Type': 'application/x-www-form-urlencoded ; charset=utf-8',
 		},
 	})
 	let json = await response.json()
