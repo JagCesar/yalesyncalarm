@@ -8,5 +8,7 @@
 		"removeComments": false,
 		"strict": true,
 	},
-	"include": "src"
+	"include": [
+		"src"
+	]
 }
