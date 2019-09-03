@@ -1,9 +1,12 @@
 {
 	"compilerOptions": {
 		"target": "esnext",
+		"outDir": "lib",
 		"module": "commonjs",
-		"removeComments": false,
+		"declaration": true,
 		"sourceMap": true,
-		"strict": true
-	}
+		"removeComments": false,
+		"strict": true,
+	},
+	"include": "src"
 }
