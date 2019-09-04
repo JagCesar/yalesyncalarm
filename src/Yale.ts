@@ -53,7 +53,7 @@ export namespace Yale {
 	export async function setStatus(
 		accessToken: string,
 		alarmState: AlarmState
-	): Promise<string> {
+	): Promise<boolean> {
 		if (!accessToken || accessToken.length === 0) {
 			throw new Error(
 				'Please call getAccessToken to get your access token first.'
@@ -63,11 +63,15 @@ export namespace Yale {
 		let response = await NodeFetch.default(url(Path.panelMode), {
 			method: 'POST',
 			body: `area=1&mode=${alarmState}`,
-			headers: headersWithAccessToken(accessToken),
+			headers: {
+				Authorization: `Bearer ${accessToken}`,
+				'Content-Type': 'application/x-www-form-urlencoded ; charset=utf-8',
+			},
 		})
 		let json = await response.json()
+		console.log(JSON.stringify(json))
 		let setStatus = json.data.cmd_ack
-		return setStatus
+		return setStatus === 'OK'
 	}
 
 	export async function getStatus(accessToken: string): Promise<AlarmState> {

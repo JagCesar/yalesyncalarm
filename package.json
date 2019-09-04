@@ -1,10 +1,14 @@
 {
 	"name": "yalealarmsystem",
 	"version": "3.0.0",
-	"description": "Node.js connector for Yale Burglar Alarm System",
-	"main": "index.js",
+	"description": "Yale Sync Smart Home Alarm System API for Node.js, written in Typescript.",
+	"main": "./dist/Yale.js",
+	"types": "./dist/Yale.d.ts",
 	"files": [
-		"lib/**/*"
+		"/dist/**/*",
+		"/src/**/*",
+		".tsconfig.json",
+		"README.md"
 	],
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
@@ -16,7 +20,9 @@
 		"url": "git+https://github.com/jonathandann/yalealarmsystem.git"
 	},
 	"keywords": [
-		"Yale"
+		"Yale",
+		"Alarm",
+		"Typescript"
 	],
 	"author": "Jonathan Dann",
 	"license": "MIT",
