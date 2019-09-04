@@ -14,12 +14,6 @@ export namespace Yale {
 		return `https://mob.yalehomesystem.co.uk/yapi/${path}/`
 	}
 
-	function headersWithAccessToken(accessToken: string): NodeFetch.HeadersInit {
-		return {
-			Authorization: `Bearer ${accessToken}`,
-		}
-	}
-
 	export async function getAccessToken(
 		username: string,
 		password: string
@@ -83,7 +77,9 @@ export namespace Yale {
 
 		let response = await NodeFetch.default(url(Path.panelMode), {
 			method: 'GET',
-			headers: headersWithAccessToken(accessToken),
+			headers: {
+				Authorization: `Bearer ${accessToken}`,
+			},
 		})
 		let json = await response.json()
 		let alarmState = json.data[0].mode
