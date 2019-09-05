@@ -31,6 +31,7 @@ export namespace Yale {
 			},
 		})
 		let json = await response.json()
+		console.log(JSON.stringify(json))
 		if (json.error === 'invalid_grant') {
 			throw new Error(json.error_description)
 		} else {
@@ -82,17 +83,30 @@ export namespace Yale {
 			},
 		})
 		let json = await response.json()
+		console.log(JSON.stringify(json))
 		let alarmState = json.data[0].mode
 		return alarmState
 	}
 
-	// export function getDevices(access_token: string): Promise<any> {
-	//   return fetch(urls.deviceStatus, {
-	//     method: "GET",
-	//     headers: headersWithAccessToken(access_token)
-	//   }).then(res => res.json())
-	//   .then(json => {
-	//     return json
-	//   })
-	// }
+	enum DeviceType {
+		Contact,
+		PIR,
+	}
+
+	export interface Device {
+		type: DeviceType
+		name: string
+		// status:
+	}
+
+	export async function getDevices(accessToken: string): Promise<Device[]> {
+		let response = await NodeFetch.default(url(Path.deviceStatus), {
+			method: 'GET',
+			headers: {
+				Authorization: `Bearer ${accessToken}`,
+			},
+		})
+		let json = await response.json()
+		return json
+	}
 }
