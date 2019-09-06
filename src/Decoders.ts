@@ -8,15 +8,15 @@ import {
 } from 'type-safe-json-decoder'
 import { access } from 'fs'
 
-namespace JSON {
-	interface Device {
+export namespace JSONDecoders {
+	export interface Device {
 		id: string
 		name: string
 		type: string
 		status: string
 	}
 
-	const devicesDecoder: Decoder<Device[]> = at(
+	export const devicesDecoder: Decoder<Device[]> = at(
 		['data'],
 		array(
 			object(
@@ -29,36 +29,47 @@ namespace JSON {
 		)
 	)
 
-	interface AccessToken {
+	export interface AccessToken {
 		token: string
 		expiration: number
 	}
 
-	const accessTokenDecoder: Decoder<AccessToken> = object(
+	export const accessTokenDecoder: Decoder<AccessToken> = object(
 		['access_token', string()],
 		['expires_in', number()],
 		(token, expiration) => ({ token, expiration })
 	)
 
-	interface PanelSetResponse {
+	export interface PanelSetResponse {
 		acknowledgement: string
 	}
 
-	const panelSetDecoder: Decoder<PanelSetResponse> = at(
+	export const panelSetDecoder: Decoder<PanelSetResponse> = at(
 		['data'],
 		object(['cmd_ack', string()], acknowledgement => ({ acknowledgement }))
 	)
 
-	interface PanelGetResponse {
+	export interface PanelGetResponse {
 		area: string
 		mode: string
 	}
 
-	const panelGetDecoder: Decoder<PanelGetResponse> = at(
+	export const panelGetDecoder: Decoder<PanelGetResponse> = at(
 		['data'],
 		object(['area', string()], ['mode', string()], (area, mode) => ({
 			area,
 			mode,
 		}))
+	)
+
+	export interface Error {
+		error: string
+		description?: string // Not all API responses contain an error_description field.
+	}
+
+	export const errorDecoder: Decoder<Error> = object(
+		['error', string()],
+		['error_description', string()],
+		(error, description) => ({ error, description })
 	)
 }

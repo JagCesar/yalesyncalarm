@@ -1,4 +1,5 @@
 import * as NodeFetch from 'node-fetch'
+import { JSONDecoders } from './Decoders'
 
 export namespace Yale {
 	const yaleAuthToken =
@@ -14,29 +15,51 @@ export namespace Yale {
 		return `https://mob.yalehomesystem.co.uk/yapi/${path}/`
 	}
 
+	/**
+		So far we've seen the following errors: 
+		HTTP 400 'invalid_request' (missing username or password)
+		HTTP 400 'unsupported_grant_type' (missing grant_type in request body)
+		HTTP 401 'invalid_grant' (incorrect username or password)
+	*/
 	export async function getAccessToken(
 		username: string,
 		password: string
 	): Promise<string> {
-		let payload = `grant_type=password&username=${encodeURIComponent(
+		let body = `grant_type=password&username=${encodeURIComponent(
 			username
 		)}&password=${encodeURIComponent(password)}`
 
 		let response = await NodeFetch.default(url(Path.auth), {
 			method: 'POST',
-			body: payload,
+			body: body,
 			headers: {
-				Authorization: `Basic ${yaleAuthToken}`,
+				Authorization: `Basic ${yaleAuthToken}`, // without this, error === 'invalid_client'
 				'Content-Type': 'application/x-www-form-urlencoded ; charset=utf-8',
 			},
 		})
+
 		let json = await response.json()
 		console.log(JSON.stringify(json))
-		if (json.error === 'invalid_grant') {
-			throw new Error(json.error_description)
-		} else {
-			return json.access_token
+
+		if (response.status === 200) {
+			let accessToken = JSONDecoders.accessTokenDecoder.decodeAny(json) // TODO: Handle decoder throwing an error, when the response format inevitably changes.
+			return accessToken.token
 		}
+
+		if (response.status >= 400) {
+			let error = JSONDecoders.errorDecoder.decodeAny(json) // TODO: Handle decoder throwing an error, rethrow something useful.
+			if (error.description) {
+				throw new Error(
+					`HTTP ${response.status} "${error.error}", "${error.description}"`
+				)
+			} else {
+				throw new Error(
+					`HTTP ${response.status} "${error.error}", No description given.`
+				)
+			}
+		}
+
+		throw new Error('wow')
 	}
 
 	export const enum AlarmState {
@@ -63,10 +86,29 @@ export namespace Yale {
 				'Content-Type': 'application/x-www-form-urlencoded ; charset=utf-8',
 			},
 		})
+
 		let json = await response.json()
 		console.log(JSON.stringify(json))
-		let setStatus = json.data.cmd_ack
-		return setStatus === 'OK'
+
+		if (response.status === 200) {
+			let status = JSONDecoders.panelSetDecoder.decodeAny(json)
+			return status.acknowledgement === 'OK'
+		}
+
+		if (response.status >= 400) {
+			let error = JSONDecoders.errorDecoder.decodeAny(json) // TODO: Handle decoder throwing an error, rethrow something useful.
+			if (error.description) {
+				throw new Error(
+					`HTTP ${response.status} "${error.error}", "${error.description}"`
+				)
+			} else {
+				throw new Error(
+					`HTTP ${response.status} "${error.error}", No description given.`
+				)
+			}
+		}
+
+		throw new Error('wow')
 	}
 
 	export async function getStatus(accessToken: string): Promise<AlarmState> {
@@ -82,31 +124,127 @@ export namespace Yale {
 				Authorization: `Bearer ${accessToken}`,
 			},
 		})
+
 		let json = await response.json()
 		console.log(JSON.stringify(json))
-		let alarmState = json.data[0].mode
-		return alarmState
+
+		if (response.status === 200) {
+			let state = JSONDecoders.panelGetDecoder.decodeAny(json)
+			switch (state.mode) {
+				case 'arm':
+					return AlarmState.arm
+				case 'home':
+					return AlarmState.home
+				case 'disarm':
+					return AlarmState.disarm
+				default:
+					throw new Error('wow')
+			}
+		}
+
+		if (response.status >= 400) {
+			let error = JSONDecoders.errorDecoder.decodeAny(json) // TODO: Handle decoder throwing an error, rethrow something useful.
+			if (error.description) {
+				throw new Error(
+					`HTTP ${response.status} "${error.error}", "${error.description}"`
+				)
+			} else {
+				throw new Error(
+					`HTTP ${response.status} "${error.error}", No description given.`
+				)
+			}
+		}
+
+		throw new Error('wow')
 	}
 
 	enum DeviceType {
 		Contact,
 		PIR,
+		Siren,
+		Keypad,
+		Unknown,
+	}
+
+	enum DeviceStatus {
+		None,
+		Closed,
+		Open,
 	}
 
 	export interface Device {
-		type: DeviceType
+		identifier: string
 		name: string
-		// status:
+		type: DeviceType
+		status: DeviceStatus
+	}
+
+	function convertStatus(status: string): DeviceStatus {
+		switch (status) {
+			case 'device_status.dc_close':
+				return DeviceStatus.Closed
+			case 'device.status.dc_open':
+				return DeviceStatus.Open
+			default:
+				return DeviceStatus.None
+		}
+	}
+
+	function convertType(type: string): DeviceType {
+		switch (type) {
+			case 'device_type.door_contact':
+				return DeviceType.Contact
+			case 'device_type.pir':
+				return DeviceType.PIR
+			case 'device_type.bx':
+				return DeviceType.Siren
+			case 'device_type.keypad':
+				return DeviceType.Keypad
+			default:
+				return DeviceType.Unknown
+		}
 	}
 
 	export async function getDevices(accessToken: string): Promise<Device[]> {
+		if (!accessToken || accessToken.length === 0) {
+			throw new Error(
+				'Please call getAccessToken to get your access token first.'
+			)
+		}
+
 		let response = await NodeFetch.default(url(Path.deviceStatus), {
 			method: 'GET',
 			headers: {
 				Authorization: `Bearer ${accessToken}`,
 			},
 		})
+
 		let json = await response.json()
-		return json
+		console.log(JSON.stringify(json))
+
+		if (response.status === 200) {
+			let devices = JSONDecoders.devicesDecoder.decodeAny(json)
+			return devices.map(device => ({
+				identifier: device.id,
+				name: device.name,
+				type: convertType(device.type),
+				status: convertStatus(device.status),
+			}))
+		}
+
+		if (response.status >= 400) {
+			let error = JSONDecoders.errorDecoder.decodeAny(json) // TODO: Handle decoder throwing an error, rethrow something useful.
+			if (error.description) {
+				throw new Error(
+					`HTTP ${response.status} "${error.error}", "${error.description}"`
+				)
+			} else {
+				throw new Error(
+					`HTTP ${response.status} "${error.error}", No description given.`
+				)
+			}
+		}
+
+		throw new Error('wow')
 	}
 }
