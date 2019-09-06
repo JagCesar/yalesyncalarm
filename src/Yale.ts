@@ -71,7 +71,7 @@ export namespace Yale {
 	export async function setStatus(
 		accessToken: string,
 		alarmState: AlarmState
-	): Promise<boolean> {
+	): Promise<AlarmState> {
 		if (!accessToken || accessToken.length === 0) {
 			throw new Error(
 				'Please call getAccessToken to get your access token first.'
@@ -92,7 +92,11 @@ export namespace Yale {
 
 		if (response.status === 200) {
 			let status = JSONDecoders.panelSetDecoder.decodeAny(json)
-			return status.acknowledgement === 'OK'
+			if (status.acknowledgement === 'OK') {
+				return alarmState
+			} else {
+				throw new Error('Something went wrong.')
+			}
 		}
 
 		if (response.status >= 400) {
