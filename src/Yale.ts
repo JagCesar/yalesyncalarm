@@ -1,5 +1,6 @@
 import * as NodeFetch from 'node-fetch'
 import { JSONDecoders } from './Decoders'
+import { Decoder } from 'type-safe-json-decoder'
 
 export namespace Yale {
 	const yaleAuthToken =
@@ -15,39 +16,72 @@ export namespace Yale {
 		return `https://mob.yalehomesystem.co.uk/yapi/${path}/`
 	}
 
-	/**
-		So far we've seen the following errors: 
-		HTTP 400 'invalid_request' (missing username or password)
-		HTTP 400 'unsupported_grant_type' (missing grant_type in request body)
-		HTTP 401 'invalid_grant' (incorrect username or password)
-	*/
-	export async function getAccessToken(
+	async function fetchAccessToken(
 		username: string,
 		password: string
-	): Promise<string> {
-		let body = `grant_type=password&username=${encodeURIComponent(
-			username
-		)}&password=${encodeURIComponent(password)}`
-
-		let response = await NodeFetch.default(url(Path.auth), {
+	): Promise<NodeFetch.Response> {
+		return await NodeFetch.default(url(Path.auth), {
 			method: 'POST',
-			body: body,
+			body: `grant_type=password&username=${encodeURIComponent(
+				username
+			)}&password=${encodeURIComponent(password)}`,
 			headers: {
 				Authorization: `Basic ${yaleAuthToken}`, // without this, error === 'invalid_client'
 				'Content-Type': 'application/x-www-form-urlencoded ; charset=utf-8',
 			},
 		})
+	}
 
-		let json = await response.json()
-		console.log(JSON.stringify(json))
+	async function fetchStatus(accessToken: string): Promise<NodeFetch.Response> {
+		return await NodeFetch.default(url(Path.panelMode), {
+			method: 'GET',
+			headers: {
+				Authorization: `Bearer ${accessToken}`,
+			},
+		})
+	}
 
+	async function runSetStatus(
+		accessToken: string,
+		alarmState: AlarmState
+	): Promise<NodeFetch.Response> {
+		return await NodeFetch.default(url(Path.panelMode), {
+			method: 'POST',
+			body: `area=1&mode=${alarmState}`,
+			headers: {
+				Authorization: `Bearer ${accessToken}`,
+				'Content-Type': 'application/x-www-form-urlencoded ; charset=utf-8',
+			},
+		})
+	}
+
+	async function fetchDevices(
+		accessToken: string
+	): Promise<NodeFetch.Response> {
+		return await NodeFetch.default(url(Path.deviceStatus), {
+			method: 'GET',
+			headers: {
+				Authorization: `Bearer ${accessToken}`,
+			},
+		})
+	}
+
+	async function processResponse<T, U>(
+		response: NodeFetch.Response,
+		decoder: Decoder<T>,
+		success: (decoded: T) => U
+	): Promise<U> {
 		if (response.status === 200) {
-			let accessToken = JSONDecoders.accessTokenDecoder.decodeAny(json) // TODO: Handle decoder throwing an error, when the response format inevitably changes.
-			return accessToken.token
-		}
-
-		if (response.status >= 400) {
-			let error = JSONDecoders.errorDecoder.decodeAny(json) // TODO: Handle decoder throwing an error, rethrow something useful.
+			let decoded = decoder.decodeAny(await response.json())
+			return success(decoded)
+		} else if (response.status >= 400 && response.size < 500) {
+			/**
+				So far we've seen the following errors: 
+				HTTP 400 'invalid_request' (missing username or password)
+				HTTP 400 'unsupported_grant_type' (missing grant_type in request body)
+				HTTP 401 'invalid_grant' (incorrect username or password)
+			*/
+			let error = JSONDecoders.errorDecoder.decodeAny(await response.json())
 			if (error.description) {
 				throw new Error(
 					`HTTP ${response.status} "${error.error}", "${error.description}"`
@@ -58,8 +92,31 @@ export namespace Yale {
 				)
 			}
 		}
+		throw new Error(`Unhandled HTTP status code: ${response.status}`)
+	}
 
-		throw new Error('wow')
+	export interface AccessToken {
+		token: string
+		expiration: Date
+	}
+
+	export async function getAccessToken(
+		username: string,
+		password: string
+	): Promise<AccessToken> {
+		let response = await fetchAccessToken(username, password)
+		return await processResponse(
+			response,
+			JSONDecoders.accessTokenDecoder,
+			(accessToken: JSONDecoders.AccessToken) => {
+				let expiration = new Date()
+				expiration.setSeconds(expiration.getSeconds() + accessToken.expiration)
+				return {
+					token: accessToken.token,
+					expiration: expiration,
+				}
+			}
+		)
 	}
 
 	export const enum AlarmState {
@@ -68,189 +125,132 @@ export namespace Yale {
 		disarm = 'disarm',
 	}
 
+	export async function getStatus(
+		accessToken: AccessToken
+	): Promise<AlarmState> {
+		let response = await fetchStatus(accessToken.token)
+		return processResponse(
+			response,
+			JSONDecoders.panelGetDecoder,
+			(state: JSONDecoders.PanelGetResponse[]) => {
+				switch (
+					state[0].mode // TODO: bound-checking
+				) {
+					case 'arm':
+						return AlarmState.arm
+					case 'home':
+						return AlarmState.home
+					case 'disarm':
+						return AlarmState.disarm
+					default:
+						throw new Error('wow')
+				}
+			}
+		)
+	}
+
 	export async function setStatus(
-		accessToken: string,
+		accessToken: AccessToken,
 		alarmState: AlarmState
 	): Promise<AlarmState> {
-		if (!accessToken || accessToken.length === 0) {
-			throw new Error(
-				'Please call getAccessToken to get your access token first.'
-			)
-		}
-
-		let response = await NodeFetch.default(url(Path.panelMode), {
-			method: 'POST',
-			body: `area=1&mode=${alarmState}`,
-			headers: {
-				Authorization: `Bearer ${accessToken}`,
-				'Content-Type': 'application/x-www-form-urlencoded ; charset=utf-8',
-			},
-		})
-
-		let json = await response.json()
-		console.log(JSON.stringify(json))
-
-		if (response.status === 200) {
-			let status = JSONDecoders.panelSetDecoder.decodeAny(json)
-			if (status.acknowledgement === 'OK') {
-				return alarmState
-			} else {
-				throw new Error('Something went wrong.')
+		let response = await runSetStatus(accessToken.token, alarmState)
+		return processResponse(
+			response,
+			JSONDecoders.panelSetDecoder,
+			(status: JSONDecoders.PanelSetResponse) => {
+				if (status.acknowledgement === 'OK') {
+					return alarmState
+				} else {
+					throw new Error('Something went wrong.')
+				}
 			}
-		}
-
-		if (response.status >= 400) {
-			let error = JSONDecoders.errorDecoder.decodeAny(json) // TODO: Handle decoder throwing an error, rethrow something useful.
-			if (error.description) {
-				throw new Error(
-					`HTTP ${response.status} "${error.error}", "${error.description}"`
-				)
-			} else {
-				throw new Error(
-					`HTTP ${response.status} "${error.error}", No description given.`
-				)
-			}
-		}
-
-		throw new Error('wow')
-	}
-
-	export async function getStatus(accessToken: string): Promise<AlarmState> {
-		if (!accessToken || accessToken.length === 0) {
-			throw new Error(
-				'Please call getAccessToken to get your access token first.'
-			)
-		}
-
-		let response = await NodeFetch.default(url(Path.panelMode), {
-			method: 'GET',
-			headers: {
-				Authorization: `Bearer ${accessToken}`,
-			},
-		})
-
-		let json = await response.json()
-		console.log(JSON.stringify(json))
-
-		if (response.status === 200) {
-			let state = JSONDecoders.panelGetDecoder.decodeAny(json)
-			switch (
-				state[0].mode // TODO: bound-checking
-			) {
-				case 'arm':
-					return AlarmState.arm
-				case 'home':
-					return AlarmState.home
-				case 'disarm':
-					return AlarmState.disarm
-				default:
-					throw new Error('wow')
-			}
-		}
-
-		if (response.status >= 400) {
-			let error = JSONDecoders.errorDecoder.decodeAny(json) // TODO: Handle decoder throwing an error, rethrow something useful.
-			if (error.description) {
-				throw new Error(
-					`HTTP ${response.status} "${error.error}", "${error.description}"`
-				)
-			} else {
-				throw new Error(
-					`HTTP ${response.status} "${error.error}", No description given.`
-				)
-			}
-		}
-
-		throw new Error('wow')
-	}
-
-	enum DeviceType {
-		Contact,
-		PIR,
-		Siren,
-		Keypad,
-		Unknown,
-	}
-
-	enum DeviceStatus {
-		None,
-		Closed,
-		Open,
+		)
 	}
 
 	export interface Device {
 		identifier: string
 		name: string
-		type: DeviceType
-		status: DeviceStatus
 	}
 
-	function convertStatus(status: string): DeviceStatus {
-		switch (status) {
-			case 'device_status.dc_close':
-				return DeviceStatus.Closed
-			case 'device.status.dc_open':
-				return DeviceStatus.Open
-			default:
-				return DeviceStatus.None
-		}
-	}
-
-	function convertType(type: string): DeviceType {
-		switch (type) {
-			case 'device_type.door_contact':
-				return DeviceType.Contact
-			case 'device_type.pir':
-				return DeviceType.PIR
-			case 'device_type.bx':
-				return DeviceType.Siren
-			case 'device_type.keypad':
-				return DeviceType.Keypad
-			default:
-				return DeviceType.Unknown
-		}
-	}
-
-	export async function getDevices(accessToken: string): Promise<Device[]> {
-		if (!accessToken || accessToken.length === 0) {
-			throw new Error(
-				'Please call getAccessToken to get your access token first.'
-			)
+	export namespace ContactSensor {
+		export enum State {
+			None,
+			Open,
+			Closed,
 		}
 
-		let response = await NodeFetch.default(url(Path.deviceStatus), {
-			method: 'GET',
-			headers: {
-				Authorization: `Bearer ${accessToken}`,
-			},
-		})
-
-		let json = await response.json()
-		console.log(JSON.stringify(json))
-
-		if (response.status === 200) {
-			let devices = JSONDecoders.devicesDecoder.decodeAny(json)
-			return devices.map(device => ({
-				identifier: device.id,
-				name: device.name,
-				type: convertType(device.type),
-				status: convertStatus(device.status),
-			}))
-		}
-
-		if (response.status >= 400) {
-			let error = JSONDecoders.errorDecoder.decodeAny(json) // TODO: Handle decoder throwing an error, rethrow something useful.
-			if (error.description) {
-				throw new Error(
-					`HTTP ${response.status} "${error.error}", "${error.description}"`
-				)
-			} else {
-				throw new Error(
-					`HTTP ${response.status} "${error.error}", No description given.`
-				)
+		export function parse(value: string): State {
+			switch (status) {
+				case 'device_status.dc_close':
+					return State.Closed
+				case 'device.status.dc_open':
+					return State.Open
+				default:
+					return State.None
 			}
 		}
 
-		throw new Error('wow')
+		export interface Sensor extends Device {
+			state: State
+		}
+	}
+
+	export namespace MotionSensor {
+		export enum State {
+			None,
+			Triggered,
+		}
+
+		export function parse(value: string): State {
+			switch (status) {
+				case 'device_status.pir_triggered':
+					return State.Triggered
+				default:
+					return State.None
+			}
+		}
+
+		export interface Sensor extends Device {
+			state: State
+		}
+	}
+
+	export namespace Sensor {
+		export type Sensor = ContactSensor.Sensor | MotionSensor.Sensor
+
+		export function parse(value: JSONDecoders.Device): Sensor | undefined {
+			switch (value.type) {
+				case 'device_type.door_contact':
+					return {
+						identifier: value.id,
+						name: value.name,
+						state: ContactSensor.parse(value.status),
+					}
+				case 'device_type.pir':
+					return {
+						identifier: value.id,
+						name: value.name,
+						state: MotionSensor.parse(value.status),
+					}
+				default:
+					return undefined
+			}
+		}
+	}
+
+	export const isPresent = <T>(value: T): value is NonNullable<T> =>
+		value != null
+
+	export async function getDevices(
+		accessToken: AccessToken
+	): Promise<Sensor.Sensor[]> {
+		let response = await fetchDevices(accessToken.token)
+		return processResponse(
+			response,
+			JSONDecoders.devicesDecoder,
+			(devices: JSONDecoders.Device[]) => {
+				return devices.map(Sensor.parse).filter(isPresent)
+			}
+		)
 	}
 }
