@@ -241,7 +241,7 @@ export namespace Sensor {
 
 const isPresent = <T>(value: T): value is NonNullable<T> => value != null
 
-export async function getDevices(
+export async function getSensors(
 	accessToken: AccessToken
 ): Promise<Sensor.Sensor[]> {
 	let response = await API.getDevices(accessToken.token)
