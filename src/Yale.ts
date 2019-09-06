@@ -190,10 +190,10 @@ export namespace ContactSensor {
 				return State.None
 		}
 	}
+}
 
-	export interface Sensor extends Device {
-		state: State
-	}
+export interface ContactSensor extends Device {
+	state: ContactSensor.State
 }
 
 export namespace MotionSensor {
@@ -210,13 +210,13 @@ export namespace MotionSensor {
 				return State.None
 		}
 	}
-
-	export interface Sensor extends Device {
-		state: State
-	}
 }
 
-export type Sensor = ContactSensor.Sensor | MotionSensor.Sensor
+export interface MotionSensor extends Device {
+	state: MotionSensor.State
+}
+
+export type Sensor = ContactSensor | MotionSensor
 
 function deviceToSensor(value: JSONDecoders.Device): Sensor | undefined {
 	switch (value.type) {
