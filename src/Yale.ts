@@ -32,7 +32,7 @@ namespace API {
 		})
 	}
 
-	export async function getStatus(
+	export async function getMode(
 		accessToken: string
 	): Promise<NodeFetch.Response> {
 		return await NodeFetch.default(url(Path.panelMode), {
@@ -43,13 +43,13 @@ namespace API {
 		})
 	}
 
-	export async function setStatus(
+	export async function setMode(
 		accessToken: string,
-		state: Panel.State
+		mode: Panel.Mode
 	): Promise<NodeFetch.Response> {
 		return await NodeFetch.default(url(Path.panelMode), {
 			method: 'POST',
-			body: `area=1&mode=${state}`,
+			body: `area=1&mode=${mode}`,
 			headers: {
 				Authorization: `Bearer ${accessToken}`,
 				'Content-Type': 'application/x-www-form-urlencoded ; charset=utf-8',
@@ -123,27 +123,27 @@ export async function authenticate(
 }
 
 export namespace Panel {
-	export const enum State {
+	export const enum Mode {
 		arm = 'arm',
 		home = 'home',
 		disarm = 'disarm',
 	}
 
-	export async function getState(accessToken: AccessToken): Promise<State> {
-		let response = await API.getStatus(accessToken.token)
+	export async function getMode(accessToken: AccessToken): Promise<Mode> {
+		let response = await API.getMode(accessToken.token)
 		return processResponse(
 			response,
 			JSONDecoders.panelGetDecoder,
-			(state: JSONDecoders.PanelGetResponse[]) => {
+			(mode: JSONDecoders.PanelGetResponse[]) => {
 				switch (
-					state[0].mode // TODO: bounds-checking
+					mode[0].mode // TODO: bounds-checking
 				) {
 					case 'arm':
-						return State.arm
+						return Mode.arm
 					case 'home':
-						return State.home
+						return Mode.home
 					case 'disarm':
-						return State.disarm
+						return Mode.disarm
 					default:
 						throw new Error('Something went wrong.')
 				}
@@ -151,17 +151,17 @@ export namespace Panel {
 		)
 	}
 
-	export async function setState(
+	export async function setMode(
 		accessToken: AccessToken,
-		state: State
-	): Promise<State> {
-		let response = await API.setStatus(accessToken.token, state)
+		mode: Mode
+	): Promise<Mode> {
+		let response = await API.setMode(accessToken.token, mode)
 		return processResponse(
 			response,
 			JSONDecoders.panelSetDecoder,
-			(status: JSONDecoders.PanelSetResponse) => {
-				if (status.acknowledgement === 'OK') {
-					return state
+			(value: JSONDecoders.PanelSetResponse) => {
+				if (value.acknowledgement === 'OK') {
+					return mode
 				} else {
 					throw new Error('Something went wrong.')
 				}
@@ -185,7 +185,7 @@ export namespace Devices {
 	}
 
 	function parseContactSensorState(value: string): ContactSensor.State {
-		switch (status) {
+		switch (value) {
 			case 'device_status.dc_close':
 				return ContactSensor.State.Closed
 			case 'device.status.dc_open':
@@ -207,7 +207,7 @@ export namespace Devices {
 	}
 
 	function parseMotionSensorState(value: string): MotionSensor.State {
-		switch (status) {
+		switch (value) {
 			case 'device_status.pir_triggered':
 				return MotionSensor.State.Triggered
 			default:
