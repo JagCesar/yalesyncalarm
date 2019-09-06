@@ -178,20 +178,19 @@ export namespace Devices {
 
 	export namespace ContactSensor {
 		export enum State {
-			None,
 			Open,
 			Closed,
 		}
 	}
 
-	function parseContactSensorState(value: string): ContactSensor.State {
+	function parseContactSensorState(
+		value: string
+	): ContactSensor.State | undefined {
 		switch (value) {
 			case 'device_status.dc_close':
 				return ContactSensor.State.Closed
 			case 'device.status.dc_open':
 				return ContactSensor.State.Open
-			default:
-				return ContactSensor.State.None
 		}
 	}
 
@@ -224,10 +223,15 @@ export namespace Devices {
 	function deviceToSensor(value: JSONDecoders.Device): Sensor | undefined {
 		switch (value.type) {
 			case 'device_type.door_contact':
-				return {
-					identifier: value.id,
-					name: value.name,
-					state: parseContactSensorState(value.status),
+				let state = parseContactSensorState(value.status)
+				if (state != null) {
+					return {
+						identifier: value.id,
+						name: value.name,
+						state: state,
+					}
+				} else {
+					return undefined
 				}
 			case 'device_type.pir':
 				return {
