@@ -216,40 +216,36 @@ export namespace MotionSensor {
 	}
 }
 
-export namespace Sensor {
-	export type Sensor = ContactSensor.Sensor | MotionSensor.Sensor
+export type Sensor = ContactSensor.Sensor | MotionSensor.Sensor
 
-	export function parse(value: JSONDecoders.Device): Sensor | undefined {
-		switch (value.type) {
-			case 'device_type.door_contact':
-				return {
-					identifier: value.id,
-					name: value.name,
-					state: ContactSensor.parse(value.status),
-				}
-			case 'device_type.pir':
-				return {
-					identifier: value.id,
-					name: value.name,
-					state: MotionSensor.parse(value.status),
-				}
-			default:
-				return undefined
-		}
+function deviceToSensor(value: JSONDecoders.Device): Sensor | undefined {
+	switch (value.type) {
+		case 'device_type.door_contact':
+			return {
+				identifier: value.id,
+				name: value.name,
+				state: ContactSensor.parse(value.status),
+			}
+		case 'device_type.pir':
+			return {
+				identifier: value.id,
+				name: value.name,
+				state: MotionSensor.parse(value.status),
+			}
+		default:
+			return undefined
 	}
 }
 
 const isPresent = <T>(value: T): value is NonNullable<T> => value != null
 
-export async function getSensors(
-	accessToken: AccessToken
-): Promise<Sensor.Sensor[]> {
+export async function getSensors(accessToken: AccessToken): Promise<Sensor[]> {
 	let response = await API.getDevices(accessToken.token)
 	return processResponse(
 		response,
 		JSONDecoders.devicesDecoder,
 		(devices: JSONDecoders.Device[]) => {
-			return devices.map(Sensor.parse).filter(isPresent)
+			return devices.map(deviceToSensor).filter(isPresent)
 		}
 	)
 }
