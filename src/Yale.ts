@@ -173,47 +173,43 @@ export interface Device {
 	name: string
 }
 
-export namespace ContactSensor {
-	export enum State {
-		None,
-		Open,
-		Closed,
-	}
+export enum ContactSensorState {
+	None,
+	Open,
+	Closed,
+}
 
-	export function parse(value: string): State {
-		switch (status) {
-			case 'device_status.dc_close':
-				return State.Closed
-			case 'device.status.dc_open':
-				return State.Open
-			default:
-				return State.None
-		}
+function parseContactSensorState(value: string): ContactSensorState {
+	switch (status) {
+		case 'device_status.dc_close':
+			return ContactSensorState.Closed
+		case 'device.status.dc_open':
+			return ContactSensorState.Open
+		default:
+			return ContactSensorState.None
 	}
 }
 
 export interface ContactSensor extends Device {
-	state: ContactSensor.State
+	state: ContactSensorState
 }
 
-export namespace MotionSensor {
-	export enum State {
-		None,
-		Triggered,
-	}
+export enum MotionSensorState {
+	None,
+	Triggered,
+}
 
-	export function parse(value: string): State {
-		switch (status) {
-			case 'device_status.pir_triggered':
-				return State.Triggered
-			default:
-				return State.None
-		}
+function parseMotionSensorState(value: string): MotionSensorState {
+	switch (status) {
+		case 'device_status.pir_triggered':
+			return MotionSensorState.Triggered
+		default:
+			return MotionSensorState.None
 	}
 }
 
 export interface MotionSensor extends Device {
-	state: MotionSensor.State
+	state: MotionSensorState
 }
 
 export type Sensor = ContactSensor | MotionSensor
@@ -224,13 +220,13 @@ function deviceToSensor(value: JSONDecoders.Device): Sensor | undefined {
 			return {
 				identifier: value.id,
 				name: value.name,
-				state: ContactSensor.parse(value.status),
+				state: parseContactSensorState(value.status),
 			}
 		case 'device_type.pir':
 			return {
 				identifier: value.id,
 				name: value.name,
-				state: MotionSensor.parse(value.status),
+				state: parseMotionSensorState(value.status),
 			}
 		default:
 			return undefined
