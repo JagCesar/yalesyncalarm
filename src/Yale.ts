@@ -130,7 +130,9 @@ export namespace Yale {
 
 		if (response.status === 200) {
 			let state = JSONDecoders.panelGetDecoder.decodeAny(json)
-			switch (state.mode) {
+			switch (
+				state[0].mode // TODO: bound-checking
+			) {
 				case 'arm':
 					return AlarmState.arm
 				case 'home':

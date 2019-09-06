@@ -54,12 +54,14 @@ export namespace JSONDecoders {
 		mode: string
 	}
 
-	export const panelGetDecoder: Decoder<PanelGetResponse> = at(
+	export const panelGetDecoder: Decoder<PanelGetResponse[]> = at(
 		['data'],
-		object(['area', string()], ['mode', string()], (area, mode) => ({
-			area,
-			mode,
-		}))
+		array(
+			object(['area', string()], ['mode', string()], (area, mode) => ({
+				area,
+				mode,
+			}))
+		)
 	)
 
 	export interface Error {
