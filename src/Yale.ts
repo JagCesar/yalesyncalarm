@@ -170,80 +170,88 @@ export namespace Panel {
 	}
 }
 
-export interface Device {
-	identifier: string
-	name: string
-}
-
-export enum ContactSensorState {
-	None,
-	Open,
-	Closed,
-}
-
-function parseContactSensorState(value: string): ContactSensorState {
-	switch (status) {
-		case 'device_status.dc_close':
-			return ContactSensorState.Closed
-		case 'device.status.dc_open':
-			return ContactSensorState.Open
-		default:
-			return ContactSensorState.None
+export namespace Devices {
+	export interface Device {
+		identifier: string
+		name: string
 	}
-}
 
-export interface ContactSensor extends Device {
-	state: ContactSensorState
-}
-
-export enum MotionSensorState {
-	None,
-	Triggered,
-}
-
-function parseMotionSensorState(value: string): MotionSensorState {
-	switch (status) {
-		case 'device_status.pir_triggered':
-			return MotionSensorState.Triggered
-		default:
-			return MotionSensorState.None
-	}
-}
-
-export interface MotionSensor extends Device {
-	state: MotionSensorState
-}
-
-export type Sensor = ContactSensor | MotionSensor
-
-function deviceToSensor(value: JSONDecoders.Device): Sensor | undefined {
-	switch (value.type) {
-		case 'device_type.door_contact':
-			return {
-				identifier: value.id,
-				name: value.name,
-				state: parseContactSensorState(value.status),
-			}
-		case 'device_type.pir':
-			return {
-				identifier: value.id,
-				name: value.name,
-				state: parseMotionSensorState(value.status),
-			}
-		default:
-			return undefined
-	}
-}
-
-const isPresent = <T>(value: T): value is NonNullable<T> => value != null
-
-export async function getSensors(accessToken: AccessToken): Promise<Sensor[]> {
-	let response = await API.getDevices(accessToken.token)
-	return processResponse(
-		response,
-		JSONDecoders.devicesDecoder,
-		(devices: JSONDecoders.Device[]) => {
-			return devices.map(deviceToSensor).filter(isPresent)
+	export namespace ContactSensor {
+		export enum State {
+			None,
+			Open,
+			Closed,
 		}
-	)
+	}
+
+	function parseContactSensorState(value: string): ContactSensor.State {
+		switch (status) {
+			case 'device_status.dc_close':
+				return ContactSensor.State.Closed
+			case 'device.status.dc_open':
+				return ContactSensor.State.Open
+			default:
+				return ContactSensor.State.None
+		}
+	}
+
+	export interface ContactSensor extends Device {
+		state: ContactSensor.State
+	}
+
+	export namespace MotionSensor {
+		export enum State {
+			None,
+			Triggered,
+		}
+	}
+
+	function parseMotionSensorState(value: string): MotionSensor.State {
+		switch (status) {
+			case 'device_status.pir_triggered':
+				return MotionSensor.State.Triggered
+			default:
+				return MotionSensor.State.None
+		}
+	}
+
+	export interface MotionSensor extends Device {
+		state: MotionSensor.State
+	}
+
+	export type Sensor = ContactSensor | MotionSensor
+
+	function deviceToSensor(value: JSONDecoders.Device): Sensor | undefined {
+		switch (value.type) {
+			case 'device_type.door_contact':
+				return {
+					identifier: value.id,
+					name: value.name,
+					state: parseContactSensorState(value.status),
+				}
+			case 'device_type.pir':
+				return {
+					identifier: value.id,
+					name: value.name,
+					state: parseMotionSensorState(value.status),
+				}
+			default:
+				return undefined
+		}
+	}
+
+	const isPresent = <T>(value: T): value is NonNullable<T> => value != null
+
+	export async function getSensors(
+		accessToken: AccessToken
+	): Promise<Sensor[]> {
+		let response = await API.getDevices(accessToken.token)
+		return processResponse(
+			response,
+			JSONDecoders.devicesDecoder,
+			(devices: JSONDecoders.Device[]) => {
+				return devices.map(deviceToSensor).filter(isPresent)
+			}
+		)
+	}
 }
