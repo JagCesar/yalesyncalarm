@@ -16,7 +16,7 @@ namespace API {
 		return `https://mob.yalehomesystem.co.uk/yapi/${path}/`
 	}
 
-	export async function getAccessToken(
+	export async function authenticate(
 		username: string,
 		password: string
 	): Promise<NodeFetch.Response> {
@@ -45,11 +45,11 @@ namespace API {
 
 	export async function setStatus(
 		accessToken: string,
-		alarmState: AlarmState
+		state: Panel.State
 	): Promise<NodeFetch.Response> {
 		return await NodeFetch.default(url(Path.panelMode), {
 			method: 'POST',
-			body: `area=1&mode=${alarmState}`,
+			body: `area=1&mode=${state}`,
 			headers: {
 				Authorization: `Bearer ${accessToken}`,
 				'Content-Type': 'application/x-www-form-urlencoded ; charset=utf-8',
@@ -103,11 +103,11 @@ export interface AccessToken {
 	expiration: Date
 }
 
-export async function getAccessToken(
+export async function authenticate(
 	username: string,
 	password: string
 ): Promise<AccessToken> {
-	let response = await API.getAccessToken(username, password)
+	let response = await API.authenticate(username, password)
 	return await processResponse(
 		response,
 		JSONDecoders.accessTokenDecoder,
@@ -122,50 +122,52 @@ export async function getAccessToken(
 	)
 }
 
-export const enum AlarmState {
-	arm = 'arm',
-	home = 'home',
-	disarm = 'disarm',
-}
+export namespace Panel {
+	export const enum State {
+		arm = 'arm',
+		home = 'home',
+		disarm = 'disarm',
+	}
 
-export async function getStatus(accessToken: AccessToken): Promise<AlarmState> {
-	let response = await API.getStatus(accessToken.token)
-	return processResponse(
-		response,
-		JSONDecoders.panelGetDecoder,
-		(state: JSONDecoders.PanelGetResponse[]) => {
-			switch (
-				state[0].mode // TODO: bound-checking
-			) {
-				case 'arm':
-					return AlarmState.arm
-				case 'home':
-					return AlarmState.home
-				case 'disarm':
-					return AlarmState.disarm
-				default:
-					throw new Error('wow')
+	export async function getState(accessToken: AccessToken): Promise<State> {
+		let response = await API.getStatus(accessToken.token)
+		return processResponse(
+			response,
+			JSONDecoders.panelGetDecoder,
+			(state: JSONDecoders.PanelGetResponse[]) => {
+				switch (
+					state[0].mode // TODO: bounds-checking
+				) {
+					case 'arm':
+						return State.arm
+					case 'home':
+						return State.home
+					case 'disarm':
+						return State.disarm
+					default:
+						throw new Error('Something went wrong.')
+				}
 			}
-		}
-	)
-}
+		)
+	}
 
-export async function setStatus(
-	accessToken: AccessToken,
-	alarmState: AlarmState
-): Promise<AlarmState> {
-	let response = await API.setStatus(accessToken.token, alarmState)
-	return processResponse(
-		response,
-		JSONDecoders.panelSetDecoder,
-		(status: JSONDecoders.PanelSetResponse) => {
-			if (status.acknowledgement === 'OK') {
-				return alarmState
-			} else {
-				throw new Error('Something went wrong.')
+	export async function setState(
+		accessToken: AccessToken,
+		state: State
+	): Promise<State> {
+		let response = await API.setStatus(accessToken.token, state)
+		return processResponse(
+			response,
+			JSONDecoders.panelSetDecoder,
+			(status: JSONDecoders.PanelSetResponse) => {
+				if (status.acknowledgement === 'OK') {
+					return state
+				} else {
+					throw new Error('Something went wrong.')
+				}
 			}
-		}
-	)
+		)
+	}
 }
 
 export interface Device {
