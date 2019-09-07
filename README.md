@@ -1,63 +1,66 @@
-# Yale Alarm System Node.js API Wrapper
-[![Known Vulnerabilities](https://snyk.io//test/github/jonathan-fielding/homebridge-yalealarmsystem/badge.svg?targetFile=package.json)](https://snyk.io//test/github/jonathan-fielding/homebridge-yalealarmsystem?targetFile=package.json)
+# Yale Sync & Smart Home Alarm API
 
-This Node.js module wraps the undocumented API used to control the [Yale Smart Alarm System](https://www.yale.co.uk/en/yale/couk/products/smart-living/smart-home-alarms/smart-home-alarm-and-view-kit/).
+[![Known Vulnerabilities](https://snyk.io//test/github/jonathandann/yalesyncalarm/badge.svg?targetFile=package.json)](https://snyk.io//test/github/jonathandann/yalesyncalarm/badge.svg?targetFile=package.json)
+[![npm](https://img.shields.io/npm/l/yalesyncalarm.svg 'license')](https://github.com/jonathandann/yalesyncalarm/blob/master/LICENSE)
 
-## Installation
+API wrapper for the the undocumented API used by the [Yale Sync Smart Home Alarm](https://www.yale.co.uk/en/yale/couk/products/smart-living/smart-home-alarms/sync-smart-alarm/) and [Yale Smart Home Alarm](https://www.yale.co.uk/en/yale/couk/products/smart-living/smart-home-alarms/smart-home-alarm-starter-kit/).
 
-`npm i yalealarmsystem --save`
+# Installation
 
-## Usage
+`npm install --save yalesyncalarm`
 
-### getAccessToken
+# Usage
 
-`getAccessToken` will retrieve a token to use for the API, it takes two arguments, your username and password used to login to the App of your alarm system.
+## Typescript
 
-```
-getAccessToken('username', 'password');
-```
+The NPM module ships pre-compiled `js` files, and `d.ts` files so it still can be used from typescript directly.
 
-### getStatus
+```typescript
+// File.ts
 
-`getStatus` will retrieve the status of the alarm system, it returns the response the API returns.
+import Yale from 'yalesyncalarm'
 
-```
-getStatus('access_token');
-```
-
-As the example shows you will need to pass the sessionCookie into the getStatus method call, as this module is promise based you can simply chain the getStatus method call after your getAccessToken call.
-
-```
-getAccessToken('username', 'password').then(getStatus);
+let accessToken = await Yale.authenticate('username', 'password')
+let panelMode = await Yale.Panel.getMode(accessToken)
+let setMode = await Yale.Panel.setMode(accessToken, Yale.Panel.Mode.arm) // also .disarm, .home (part-arm)
+let sensors = await Yale.Devices.getSensors(accessToken)
 ```
 
-### setStatus
+`Yale.AccessToken` contains both the token itself and an expiry date, after which the token is no longer valid. Clients are expected to verify the token is valid before calling other methods, or handle errors thrown by API calls that use the access token.
 
-`setStatus` will set the status of the alarm system. It takes two parameters:
+`Yale.Panel.Mode` is an enum consisting of `.arm`, `.disarm` and `.home` cases. The Yale alarms do not discrimiate between _home_ and _night_ modes as some other alarm systems do.
 
-* Access Token - This is retrieved using `getAccessToken`
-* Mode - The mode can either be 'arm', 'home' or 'disarm'
+`Yale.Devices.Sensor` is a discriminated union for _Door Contact Sensors_ and _Passive IR Sensors_. The states of these are conveniently expressed as `enums`. Each sensor has an `identifier` which can be used to track the state of a sensor across multiple calls to `Yale.Devices.getSensors()`.
 
+## Javascript
+
+The installed NPM module ships pre-compiled `js` files. Therefore you are not required to build the `js` from the original typescript source in order to use the package.
+
+```javascript
+// File.js
+
+var Yale = require('yalesyncalarm')
+
+var accessToken = await Yale.authenticate('username', 'password')
+var panelMode = await Yale.Panel.getMode(accessToken)
+var setMode = await Yale.Panel.setMode(accessToken, Yale.Panel.Model.arm) // also .disarm, .home (part-arm)
+var sensors = await Yale.Devices.getSensors(accessToken)
 ```
-setStatus('access_token', 'arm');
+
+# Limitations
+
+The undocumented Yale API can change on a whim, so this may break at any time. If it does, please submit a pull request if you can work out what right changes should be to make it work again.
+
+My best guess is that the `Yale Home` app itself uses a non-HTTP-based protocol like XMPP/MQTT to both send and recieve state changes. The HTTP API used in this project works for pulling state for Yale Sync and Yale Smart Home APIs, but there's no way (yet) to subscribe to state changes.
+
+# Building from Source
+
+```bash
+git clone https://github.com/jonathandann/yalesyncalarm.git && cd yalesyncalarm && npm install
 ```
 
-As the example shows you will need to pass the sessionCookie into the setStatus method call, as this module is promise based you can simply chain the setStatus method call after your getAccessToken call.
+After running `npm install`, `npm` should automatically run `npm run build`, which runs `node_modules/typescript/bin/tsc` to compile the typescript files. If it doesn't then you can run either `node_modules/typescript/bin/tsc` or `npm run build`.
 
-```
-getAccessToken('username', 'password').then((access_token) => {
-    setStatus(access_token, 'arm');
-});
-```
+There are useful configs already included for [prettier](https://prettier.io) and [Visual Studio Code](https://code.visualstudio.com).
 
-## License
-
-Copyright 2019 Jonathan Fielding, Jack Mellor & Adam Green
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-License: MIT (http://www.opensource.org/licenses/mit-license.php)
+Visual Studio Code is configured to use the version of typescript installed as a development dependency in the typescript package.
