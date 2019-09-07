@@ -6,7 +6,6 @@
 	"types": "./dist/Yale.d.ts",
 	"files": [
 		"/dist/**/*",
-		"/src/**/*",
 		".tsconfig.json",
 		"README.md",
 		"LICENSE"
