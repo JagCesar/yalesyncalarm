@@ -1,5 +1,6 @@
 # Yale Sync & Smart Home Alarm API
 
+![npm](https://img.shields.io/npm/v/yalesyncalarm)
 [![Known Vulnerabilities](https://snyk.io//test/github/jonathandann/yalesyncalarm/badge.svg?targetFile=package.json)](https://snyk.io//test/github/jonathandann/yalesyncalarm/badge.svg?targetFile=package.json)
 [![npm](https://img.shields.io/npm/l/yalesyncalarm.svg 'license')](https://github.com/jonathandann/yalesyncalarm/blob/master/LICENSE)
 
