@@ -5,7 +5,7 @@
 		"module": "commonjs",
 		"declaration": true,
 		"sourceMap": true,
-		"removeComments": false,
+		"removeComments": true,
 		"strict": true
 	},
 	"include": ["src"],
