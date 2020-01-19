@@ -19,7 +19,7 @@ The NPM module ships pre-compiled `js` files, and `d.ts` files so it still can b
 ```typescript
 // File.ts
 
-import Yale from 'yalesyncalarm'
+import * as Yale from 'yalesyncalarm'
 
 let accessToken = await Yale.authenticate('username', 'password')
 let panelMode = await Yale.Panel.getMode(accessToken)
