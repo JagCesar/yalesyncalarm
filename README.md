@@ -44,7 +44,7 @@ var Yale = require('yalesyncalarm')
 
 var accessToken = await Yale.authenticate('username', 'password')
 var panelMode = await Yale.Panel.getMode(accessToken)
-var setMode = await Yale.Panel.setMode(accessToken, Yale.Panel.Mode.arm) // also .disarm, .home (part-arm)
+var setMode = await Yale.Panel.setMode(accessToken, 'arm') // also 'disarm', 'home' (part-arm)
 var sensors = await Yale.Devices.getSensors(accessToken)
 ```
 
