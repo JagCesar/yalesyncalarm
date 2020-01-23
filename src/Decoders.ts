@@ -34,7 +34,6 @@ import {
 	number,
 	string,
 } from 'type-safe-json-decoder'
-import { access } from 'fs'
 
 export namespace JSONDecoders {
 	export interface Device {
