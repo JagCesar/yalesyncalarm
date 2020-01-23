@@ -64,4 +64,4 @@ After running `npm install`, `npm` should automatically run `npm run build`, whi
 
 There are useful configs already included for [prettier](https://prettier.io) and [Visual Studio Code](https://code.visualstudio.com).
 
-Visual Studio Code is configured to use the version of typescript installed as a development dependency in the typescript package.
+Visual Studio Code is configured to use the version of typescript installed as a development dependency in the npm package.
