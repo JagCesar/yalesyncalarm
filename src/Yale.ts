@@ -209,7 +209,7 @@ function parseContactSensorState(
 	switch (value) {
 		case 'device_status.dc_close':
 			return ContactSensor.State.Closed
-		case 'device.status.dc_open':
+		case 'device_status.dc_open':
 			return ContactSensor.State.Open
 	}
 }
