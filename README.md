@@ -6,6 +6,8 @@
 
 API wrapper for the the undocumented API used by the [Yale Sync Smart Home Alarm](https://www.yale.co.uk/en/yale/couk/products/smart-living/smart-home-alarms/sync-smart-alarm/) and [Yale Smart Home Alarm](https://www.yale.co.uk/en/yale/couk/products/smart-living/smart-home-alarms/smart-home-alarm-starter-kit/).
 
+The state of the alarm system (the panel) is exposed, along with contact and motion sensors.
+
 # Installation
 
 `npm install --save yalesyncalarm`
@@ -19,12 +21,20 @@ The NPM module ships pre-compiled `js` files, and `d.ts` files so it still can b
 ```typescript
 // File.ts
 
-import * as Yale from 'yalesyncalarm'
+import { Yale } from 'yalesyncalarm'
 
-let accessToken = await Yale.authenticate('username', 'password')
-let panelMode = await Yale.Panel.getMode(accessToken)
-let setMode = await Yale.Panel.setMode(accessToken, Yale.Panel.Mode.arm) // also .disarm, .home (part-arm)
-let sensors = await Yale.Devices.getSensors(accessToken)
+const yale = new Yale(username, password)
+await yale.update() // fetches panel and sensor state
+
+const panel = await yale.panel()
+const panelState = await yale.getPanelState()
+const updatedPanelState = await yale.setPanelState(Panel.State.Armed)
+
+const motionSensors = await yale.motionSensors()
+const contactSensors = await yale.contactSensors()
+
+const updatedMotionSensor = await yale.updateMotionSensor(motionSensor)
+const updatedContactSensor = await yale.updateMotionSensor(contactSensor)
 ```
 
 `Yale.AccessToken` contains both the token itself and an expiry date, after which the token is no longer valid. Clients are expected to verify the token is valid before calling other methods, or handle errors thrown by API calls that use the access token.
@@ -42,10 +52,18 @@ The installed NPM module ships pre-compiled `js` files. Therefore you are not re
 
 var Yale = require('yalesyncalarm')
 
-var accessToken = await Yale.authenticate('username', 'password')
-var panelMode = await Yale.Panel.getMode(accessToken)
-var setMode = await Yale.Panel.setMode(accessToken, 'arm') // also 'disarm', 'home' (part-arm)
-var sensors = await Yale.Devices.getSensors(accessToken)
+var yale = new Yale.Yale(username, password)
+await yale.update() // fetches panel and sensor state
+
+var panel = await yale.panel()
+var panelState = await yale.getPanelState()
+var updatedPanelState = await yale.setPanelState('arm)
+
+var motionSensors = await yale.motionSensors()
+var contactSensors = await yale.contactSensors()
+
+var updatedMotionSensor = await yale.updateMotionSensor(motionSensor)
+var updatedContactSensor = await yale.updateMotionSensor(contactSensor)
 ```
 
 # Limitations
