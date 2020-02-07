@@ -4,7 +4,7 @@
 [![Known Vulnerabilities](https://snyk.io//test/github/jonathandann/yalesyncalarm/badge.svg?targetFile=package.json)](https://snyk.io//test/github/jonathandann/yalesyncalarm/badge.svg?targetFile=package.json)
 [![npm](https://img.shields.io/npm/l/yalesyncalarm.svg 'license')](https://github.com/jonathandann/yalesyncalarm/blob/master/LICENSE)
 
-API wrapper for the the undocumented API used by the [Yale Sync Smart Home Alarm](https://www.yale.co.uk/en/yale/couk/products/smart-living/smart-home-alarms/sync-smart-alarm/) and [Yale Smart Home Alarm](https://www.yale.co.uk/en/yale/couk/products/smart-living/smart-home-alarms/smart-home-alarm-starter-kit/).
+API wrapper for the undocumented API used by the [Yale Sync Smart Home Alarm](https://www.yale.co.uk/en/yale/couk/products/smart-living/smart-home-alarms/sync-smart-alarm/) and [Yale Smart Home Alarm](https://www.yale.co.uk/en/yale/couk/products/smart-living/smart-home-alarms/smart-home-alarm-starter-kit/).
 
 The state of the alarm system (the panel) is exposed, along with contact and motion sensors.
 
