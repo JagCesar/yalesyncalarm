@@ -300,7 +300,6 @@ export class Yale {
 			let panelState = await getMode(accessToken)
 			this._panel = new Panel(services.panel, 'Panel', panelState)
 			let sensors = await getSensors(accessToken)
-			this._log.info(`Sensors: ${sensors}`)
 			this._contactSensors = sensors.reduce<ContactSensors>((map, sensor) => {
 				if (sensor instanceof ContactSensor) {
 					map[sensor.identifier] = sensor
