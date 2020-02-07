@@ -4,9 +4,6 @@
 	https://github.com/jonathandann/yalesyncalarm
 	Copyright (c) 2019 Jonathan Dann
 
-	Forked from https://github.com/jonathan-fielding/yalealarmsystem
-	Copyright 2019 Jonathan Fielding, Jack Mellor & Adam Green
-
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
 	in the Software without restriction, including without limitation the rights
@@ -36,8 +33,19 @@ import {
 } from 'type-safe-json-decoder'
 
 export namespace JSONDecoders {
+	export interface ServicesResponse {
+		panel: string
+	}
+
+	export const servicesDecoder: Decoder<ServicesResponse> = object(
+		['panel', string()],
+		panel => ({
+			panel,
+		})
+	)
+
 	export interface Device {
-		id: string
+		identifier: string
 		name: string
 		type: string
 		status: string
@@ -51,7 +59,7 @@ export namespace JSONDecoders {
 				['name', string()],
 				['type', string()],
 				['status1', string()],
-				(id, name, type, status) => ({ id, name, type, status })
+				(identifier, name, type, status) => ({ identifier, name, type, status })
 			)
 		)
 	)

@@ -29,6 +29,16 @@
 import * as NodeFetch from 'node-fetch'
 import { JSONDecoders } from './Decoders'
 import { Decoder } from 'type-safe-json-decoder'
+import {
+	AccessToken,
+	ContactSensor,
+	Panel,
+	MotionSensor,
+	Sensor,
+} from './Model'
+import { ILogger, Logger } from './Logger'
+import AwaitLock from 'await-lock'
+import lock from './Lock'
 
 namespace API {
 	const yaleAuthToken =
@@ -38,6 +48,7 @@ namespace API {
 		auth = 'o/token',
 		panelMode = 'api/panel/mode',
 		deviceStatus = 'api/panel/device_status',
+		services = 'services',
 	}
 
 	function url(path: Path): string {
@@ -60,6 +71,17 @@ namespace API {
 		})
 	}
 
+	export async function getServices(
+		accessToken: string
+	): Promise<NodeFetch.Response> {
+		return await NodeFetch.default(url(Path.services), {
+			method: 'GET',
+			headers: {
+				Authorization: `Bearer ${accessToken}`,
+			},
+		})
+	}
+
 	export async function getMode(
 		accessToken: string
 	): Promise<NodeFetch.Response> {
@@ -73,7 +95,7 @@ namespace API {
 
 	export async function setMode(
 		accessToken: string,
-		mode: Panel.Mode
+		mode: Panel.State
 	): Promise<NodeFetch.Response> {
 		return await NodeFetch.default(url(Path.panelMode), {
 			method: 'POST',
@@ -95,6 +117,25 @@ namespace API {
 			},
 		})
 	}
+}
+
+async function authenticate(
+	username: string,
+	password: string
+): Promise<AccessToken> {
+	let response = await API.authenticate(username, password)
+	return await processResponse(
+		response,
+		JSONDecoders.accessTokenDecoder,
+		(accessToken: JSONDecoders.AccessToken) => {
+			let expiration = new Date()
+			expiration.setSeconds(expiration.getSeconds() + accessToken.expiration)
+			return {
+				token: accessToken.token,
+				expiration: expiration,
+			}
+		}
+	)
 }
 
 async function processResponse<T, U>(
@@ -126,164 +167,216 @@ async function processResponse<T, U>(
 	throw new Error(`Unhandled HTTP status code: ${response.status}`)
 }
 
-export interface AccessToken {
-	token: string
-	expiration: Date
-}
-
-export async function authenticate(
-	username: string,
-	password: string
-): Promise<AccessToken> {
-	let response = await API.authenticate(username, password)
-	return await processResponse(
+export async function getMode(accessToken: AccessToken): Promise<Panel.State> {
+	let response = await API.getMode(accessToken.token)
+	return processResponse(
 		response,
-		JSONDecoders.accessTokenDecoder,
-		(accessToken: JSONDecoders.AccessToken) => {
-			let expiration = new Date()
-			expiration.setSeconds(expiration.getSeconds() + accessToken.expiration)
-			return {
-				token: accessToken.token,
-				expiration: expiration,
+		JSONDecoders.panelGetDecoder,
+		(mode: JSONDecoders.PanelGetResponse[]) => {
+			switch (
+				mode[0].mode // TODO: bounds-checking
+			) {
+				case 'arm':
+					return Panel.State.Armed
+				case 'home':
+					return Panel.State.Home
+				case 'disarm':
+					return Panel.State.Disarmed
+				default:
+					throw new Error('Something went wrong.')
 			}
 		}
 	)
 }
 
-export namespace Panel {
-	export const enum Mode {
-		arm = 'arm',
-		home = 'home',
-		disarm = 'disarm',
-	}
+async function getServices(
+	accessToken: AccessToken
+): Promise<JSONDecoders.ServicesResponse> {
+	let response = await API.getServices(accessToken.token)
+	return processResponse(
+		response,
+		JSONDecoders.servicesDecoder,
+		servicesJSON => {
+			return servicesJSON
+		}
+	)
+}
 
-	export async function getMode(accessToken: AccessToken): Promise<Mode> {
-		let response = await API.getMode(accessToken.token)
-		return processResponse(
-			response,
-			JSONDecoders.panelGetDecoder,
-			(mode: JSONDecoders.PanelGetResponse[]) => {
-				switch (
-					mode[0].mode // TODO: bounds-checking
-				) {
-					case 'arm':
-						return Mode.arm
-					case 'home':
-						return Mode.home
-					case 'disarm':
-						return Mode.disarm
-					default:
-						throw new Error('Something went wrong.')
-				}
-			}
-		)
-	}
-
-	export async function setMode(
-		accessToken: AccessToken,
-		mode: Mode
-	): Promise<Mode> {
-		let response = await API.setMode(accessToken.token, mode)
-		return processResponse(
-			response,
-			JSONDecoders.panelSetDecoder,
-			(value: JSONDecoders.PanelSetResponse) => {
-				if (value.acknowledgement === 'OK') {
-					return mode
-				} else {
-					throw new Error('Something went wrong.')
-				}
-			}
-		)
+// TODO: move to JSONDecoders
+function parseContactSensorState(
+	value: string
+): ContactSensor.State | undefined {
+	switch (value) {
+		case 'device_status.dc_close':
+			return ContactSensor.State.Closed
+		case 'device.status.dc_open':
+			return ContactSensor.State.Open
 	}
 }
 
-export namespace Devices {
-	export interface Device {
-		identifier: string
-		name: string
+// TODO: move to JSONDecoders
+function parseMotionSensorState(value: string): MotionSensor.State {
+	switch (value) {
+		case 'device_status.pir_triggered':
+			return MotionSensor.State.Triggered
+		default:
+			return MotionSensor.State.None
 	}
+}
 
-	export namespace ContactSensor {
-		export enum State {
-			Open,
-			Closed,
-		}
-	}
-
-	function parseContactSensorState(
-		value: string
-	): ContactSensor.State | undefined {
-		switch (value) {
-			case 'device_status.dc_close':
-				return ContactSensor.State.Closed
-			case 'device.status.dc_open':
-				return ContactSensor.State.Open
-		}
-	}
-
-	export interface ContactSensor extends Device {
-		state: ContactSensor.State
-	}
-
-	export namespace MotionSensor {
-		export enum State {
-			None,
-			Triggered,
-		}
-	}
-
-	function parseMotionSensorState(value: string): MotionSensor.State {
-		switch (value) {
-			case 'device_status.pir_triggered':
-				return MotionSensor.State.Triggered
-			default:
-				return MotionSensor.State.None
-		}
-	}
-
-	export interface MotionSensor extends Device {
-		state: MotionSensor.State
-	}
-
-	export type Sensor = ContactSensor | MotionSensor
-
-	function deviceToSensor(value: JSONDecoders.Device): Sensor | undefined {
-		switch (value.type) {
-			case 'device_type.door_contact':
-				let state = parseContactSensorState(value.status)
-				if (state != null) {
-					return {
-						identifier: value.id,
-						name: value.name,
-						state: state,
-					}
-				} else {
-					return undefined
-				}
-			case 'device_type.pir':
-				return {
-					identifier: value.id,
-					name: value.name,
-					state: parseMotionSensorState(value.status),
-				}
-			default:
+// TODO: move to JSONDecoders
+function deviceToSensor(value: JSONDecoders.Device): Sensor | undefined {
+	switch (value.type) {
+		case 'device_type.door_contact':
+			let state = parseContactSensorState(value.status)
+			if (state !== undefined) {
+				return new ContactSensor(value.identifier, value.name, state)
+			} else {
 				return undefined
+			}
+		case 'device_type.pir':
+			return new MotionSensor(
+				value.identifier,
+				value.name,
+				parseMotionSensorState(value.status)
+			)
+		default:
+			return undefined
+	}
+}
+
+const isPresent = <T>(value: T): value is NonNullable<T> => value != null
+
+async function getSensors(accessToken: AccessToken): Promise<Sensor[]> {
+	let response = await API.getDevices(accessToken.token)
+	return processResponse(
+		response,
+		JSONDecoders.devicesDecoder,
+		(devices: JSONDecoders.Device[]) => {
+			return devices.map(deviceToSensor).filter(isPresent)
 		}
+	)
+}
+
+async function setMode(
+	accessToken: AccessToken,
+	mode: Panel.State
+): Promise<Panel.State> {
+	let response = await API.setMode(accessToken.token, mode)
+	return processResponse(
+		response,
+		JSONDecoders.panelSetDecoder,
+		(value: JSONDecoders.PanelSetResponse) => {
+			if (value.acknowledgement === 'OK') {
+				return mode
+			} else {
+				throw new Error('Something went wrong.')
+			}
+		}
+	)
+}
+
+export type ContactSensors = { [key: string]: ContactSensor }
+export type MotionSensors = { [key: string]: MotionSensor }
+
+export class Yale {
+	private _panel?: Panel
+
+	private _contactSensors: ContactSensors = {}
+	private _motionSensors: MotionSensors = {}
+
+	private _lock = new AwaitLock()
+
+	public constructor(
+		private readonly _username: string,
+		private readonly _password: string,
+		private readonly _log: ILogger = new Logger()
+	) {}
+
+	public async update(): Promise<void> {
+		return await lock(this._lock, async () => {
+			let accessToken = await authenticate(this._username, this._password)
+			let services = await getServices(accessToken)
+			let panelState = await getMode(accessToken)
+			this._panel = new Panel(services.panel, 'Panel', panelState)
+			let sensors = await getSensors(accessToken)
+			this._log.info(`Sensors: ${sensors}`)
+			this._contactSensors = sensors.reduce<ContactSensors>((map, sensor) => {
+				if (sensor instanceof ContactSensor) {
+					map[sensor.identifier] = sensor
+				}
+				return map
+			}, {})
+			this._motionSensors = sensors.reduce<MotionSensors>((map, sensor) => {
+				if (sensor instanceof MotionSensor) {
+					map[sensor.identifier] = sensor
+				}
+				return map
+			}, {})
+		})
 	}
 
-	const isPresent = <T>(value: T): value is NonNullable<T> => value != null
+	public async panel(): Promise<Panel | undefined> {
+		return await lock(this._lock, async () => {
+			return this._panel
+		})
+	}
 
-	export async function getSensors(
-		accessToken: AccessToken
-	): Promise<Sensor[]> {
-		let response = await API.getDevices(accessToken.token)
-		return processResponse(
-			response,
-			JSONDecoders.devicesDecoder,
-			(devices: JSONDecoders.Device[]) => {
-				return devices.map(deviceToSensor).filter(isPresent)
-			}
-		)
+	public async motionSensors(): Promise<MotionSensors> {
+		return await lock(this._lock, async () => {
+			return this._motionSensors
+		})
+	}
+
+	public async contactSensors(): Promise<ContactSensors> {
+		return await lock(this._lock, async () => {
+			return this._contactSensors
+		})
+	}
+
+	public async getPanelState(): Promise<Panel.State> {
+		return await lock(this._lock, async () => {
+			let accessToken = await authenticate(this._username, this._password)
+			return getMode(accessToken)
+		})
+	}
+
+	public async setPanelState(targetState: Panel.State): Promise<Panel.State> {
+		return await lock(this._lock, async () => {
+			let accessToken = await authenticate(this._username, this._password)
+			return setMode(accessToken, targetState)
+		})
+	}
+
+	public async updateMotionSensor(
+		sensor: MotionSensor
+	): Promise<MotionSensor | undefined> {
+		return await lock(this._lock, async () => {
+			let accessToken = await authenticate(this._username, this._password)
+			let sensors = await getSensors(accessToken)
+			this._motionSensors = sensors.reduce<MotionSensors>((map, sensor) => {
+				if (sensor instanceof MotionSensor) {
+					map[sensor.identifier] = sensor
+				}
+				return map
+			}, {})
+			return this._motionSensors[sensor.identifier]
+		})
+	}
+
+	public async updateContactSensor(
+		sensor: ContactSensor
+	): Promise<ContactSensor | undefined> {
+		return await lock(this._lock, async () => {
+			let accessToken = await authenticate(this._username, this._password)
+			let sensors = await getSensors(accessToken)
+			this._contactSensors = sensors.reduce<ContactSensors>((map, sensor) => {
+				if (sensor instanceof ContactSensor) {
+					map[sensor.identifier] = sensor
+				}
+				return map
+			}, {})
+			return this._contactSensors[sensor.identifier]
+		})
 	}
 }

@@ -33,6 +33,7 @@
 	"homepage": "https://github.com/jonathandann/yalealarmsystem/#readme",
 	"dependencies": {
 		"@types/node-fetch": "^2.5.4",
+		"await-lock": "^2.0.1",
 		"node-fetch": "^1.7.3",
 		"type-safe-json-decoder": "^0.2.0"
 	},
