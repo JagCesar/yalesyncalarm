@@ -293,25 +293,41 @@ export class Yale {
 		private readonly _log: ILogger = new Logger()
 	) {}
 
+	private async _updatePanel(accessToken: AccessToken): Promise<Panel> {
+		const identifier: string = await (async () => {
+			if (this._panel === undefined) {
+				const services = await getServices(accessToken)
+				return services.panel
+			} else {
+				return this._panel.identifier
+			}
+		})()
+		const panelState = await getMode(accessToken)
+		this._panel = new Panel(identifier, 'Panel', panelState)
+		return this._panel
+	}
+
+	private async _updateSensors(accessToken: AccessToken): Promise<void> {
+		const sensors = await getSensors(accessToken)
+		this._contactSensors = sensors.reduce<ContactSensors>((map, sensor) => {
+			if (sensor instanceof ContactSensor) {
+				map[sensor.identifier] = sensor
+			}
+			return map
+		}, {})
+		this._motionSensors = sensors.reduce<MotionSensors>((map, sensor) => {
+			if (sensor instanceof MotionSensor) {
+				map[sensor.identifier] = sensor
+			}
+			return map
+		}, {})
+	}
+
 	public async update(): Promise<void> {
 		return await lock(this._lock, async () => {
-			let accessToken = await authenticate(this._username, this._password)
-			let services = await getServices(accessToken)
-			let panelState = await getMode(accessToken)
-			this._panel = new Panel(services.panel, 'Panel', panelState)
-			let sensors = await getSensors(accessToken)
-			this._contactSensors = sensors.reduce<ContactSensors>((map, sensor) => {
-				if (sensor instanceof ContactSensor) {
-					map[sensor.identifier] = sensor
-				}
-				return map
-			}, {})
-			this._motionSensors = sensors.reduce<MotionSensors>((map, sensor) => {
-				if (sensor instanceof MotionSensor) {
-					map[sensor.identifier] = sensor
-				}
-				return map
-			}, {})
+			const accessToken = await authenticate(this._username, this._password)
+			await this._updatePanel(accessToken)
+			await this._updateSensors(accessToken)
 		})
 	}
 
@@ -335,15 +351,28 @@ export class Yale {
 
 	public async getPanelState(): Promise<Panel.State> {
 		return await lock(this._lock, async () => {
-			let accessToken = await authenticate(this._username, this._password)
-			return getMode(accessToken)
+			const accessToken = await authenticate(this._username, this._password)
+			return (await this._updatePanel(accessToken)).state
 		})
 	}
 
 	public async setPanelState(targetState: Panel.State): Promise<Panel.State> {
 		return await lock(this._lock, async () => {
-			let accessToken = await authenticate(this._username, this._password)
-			return setMode(accessToken, targetState)
+			const accessToken = await authenticate(this._username, this._password)
+			const panelState = await setMode(accessToken, targetState)
+			if (this._panel === undefined) {
+				// TODO: this should actually throw, we're in a weird state where we have
+				// no panel, but we're trying to set a state. update() should have been called
+				// first.
+				return (await this._updatePanel(accessToken)).state
+			} else {
+				this._panel = new Panel(
+					this._panel.identifier,
+					this._panel.name,
+					panelState
+				)
+				return panelState
+			}
 		})
 	}
 
@@ -351,14 +380,8 @@ export class Yale {
 		sensor: MotionSensor
 	): Promise<MotionSensor | undefined> {
 		return await lock(this._lock, async () => {
-			let accessToken = await authenticate(this._username, this._password)
-			let sensors = await getSensors(accessToken)
-			this._motionSensors = sensors.reduce<MotionSensors>((map, sensor) => {
-				if (sensor instanceof MotionSensor) {
-					map[sensor.identifier] = sensor
-				}
-				return map
-			}, {})
+			const accessToken = await authenticate(this._username, this._password)
+			await this._updateSensors(accessToken)
 			return this._motionSensors[sensor.identifier]
 		})
 	}
@@ -367,14 +390,8 @@ export class Yale {
 		sensor: ContactSensor
 	): Promise<ContactSensor | undefined> {
 		return await lock(this._lock, async () => {
-			let accessToken = await authenticate(this._username, this._password)
-			let sensors = await getSensors(accessToken)
-			this._contactSensors = sensors.reduce<ContactSensors>((map, sensor) => {
-				if (sensor instanceof ContactSensor) {
-					map[sensor.identifier] = sensor
-				}
-				return map
-			}, {})
+			const accessToken = await authenticate(this._username, this._password)
+			await this._updateSensors(accessToken)
 			return this._contactSensors[sensor.identifier]
 		})
 	}
