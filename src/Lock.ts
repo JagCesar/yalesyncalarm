@@ -32,6 +32,8 @@ export default async function lock<T>(
 	await lock.acquireAsync()
 	try {
 		return await f()
+	} catch (error) {
+		return error
 	} finally {
 		lock.release()
 	}
