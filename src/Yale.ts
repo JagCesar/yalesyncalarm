@@ -35,6 +35,7 @@ import {
 	Panel,
 	MotionSensor,
 	Sensor,
+	DoorLock,
 } from './Model'
 import { ILogger, Logger } from './Logger'
 import AwaitLock from 'await-lock'
@@ -225,6 +226,18 @@ function parseMotionSensorState(value: string): MotionSensor.State {
 }
 
 // TODO: move to JSONDecoders
+function parseLockedState(value: string): DoorLock.State {
+	switch (value) {
+		case 'device_status.lock':
+			return DoorLock.State.locked
+		case 'device_status.unlock':
+			return DoorLock.State.unlocked
+		default:
+			return DoorLock.State.unlocked
+	}
+}
+
+// TODO: move to JSONDecoders
 function deviceToSensor(value: JSONDecoders.Device): Sensor | undefined {
 	switch (value.type) {
 		case 'device_type.door_contact':
@@ -239,6 +252,12 @@ function deviceToSensor(value: JSONDecoders.Device): Sensor | undefined {
 				value.identifier,
 				value.name,
 				parseMotionSensorState(value.status)
+			)
+		case 'device_type.door_lock':
+			return new DoorLock(
+				value.identifier,
+				value.name,
+				parseLockedState(value.status)
 			)
 		default:
 			return undefined
@@ -278,12 +297,14 @@ async function setMode(
 
 export type ContactSensors = { [key: string]: ContactSensor }
 export type MotionSensors = { [key: string]: MotionSensor }
+export type DoorLocks = { [key: string]: DoorLock }
 
 export class Yale {
 	private _panel?: Panel
 
 	private _contactSensors: ContactSensors = {}
 	private _motionSensors: MotionSensors = {}
+	private _doorLocks: DoorLocks = {}
 
 	private _lock = new AwaitLock()
 
@@ -317,6 +338,12 @@ export class Yale {
 		}, {})
 		this._motionSensors = sensors.reduce<MotionSensors>((map, sensor) => {
 			if (sensor instanceof MotionSensor) {
+				map[sensor.identifier] = sensor
+			}
+			return map
+		}, {})
+		this._doorLocks = sensors.reduce<DoorLocks>((map, sensor) => {
+			if (sensor instanceof DoorLock) {
 				map[sensor.identifier] = sensor
 			}
 			return map
@@ -393,6 +420,16 @@ export class Yale {
 			const accessToken = await authenticate(this._username, this._password)
 			await this._updateSensors(accessToken)
 			return this._contactSensors[sensor.identifier]
+		})
+	}
+
+	public async updateDoorLock(
+		doorLock: DoorLock
+	): Promise<DoorLock | undefined> {
+		return await lock(this._lock, async () => {
+			const accessToken = await authenticate(this._username, this._password)
+			await this._updateSensors(accessToken)
+			return this._doorLocks[doorLock.identifier]
 		})
 	}
 }

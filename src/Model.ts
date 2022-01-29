@@ -78,4 +78,19 @@ export namespace MotionSensor {
 	}
 }
 
-export type Sensor = ContactSensor | MotionSensor
+export class DoorLock implements Device {
+	public constructor(
+		readonly identifier: string,
+		readonly name: string,
+		readonly state: DoorLock.State
+	) {}
+}
+
+export namespace DoorLock {
+	export enum State {
+		locked = 0,
+		unlocked = 1,
+	}
+}
+
+export type Sensor = ContactSensor | MotionSensor | DoorLock
