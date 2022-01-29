@@ -1,5 +1,5 @@
 {
-	"name": "yalesyncalarm",
+	"name": "@jagcesar/yalesyncalarm",
 	"version": "2.1.0",
 	"description": "Yale Sync Smart Home Alarm System API for Node.js, written in Typescript.",
 	"main": "./dist/Yale.js",
