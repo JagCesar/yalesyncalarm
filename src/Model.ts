@@ -87,6 +87,7 @@ export class DoorLock implements Device {
 }
 
 export namespace DoorLock {
+	// Add support for all states https://developers.homebridge.io/#/characteristic/LockCurrentState
 	export enum State {
 		locked = 0,
 		unlocked = 1,
