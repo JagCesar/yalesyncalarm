@@ -376,6 +376,12 @@ export class Yale {
 		})
 	}
 
+	public async doorLocks(): Promise<DoorLocks> {
+		return await lock(this._lock, async () => {
+			return this._doorLocks
+		})
+	}
+
 	public async getPanelState(): Promise<Panel.State> {
 		return await lock(this._lock, async () => {
 			const accessToken = await authenticate(this._username, this._password)
