@@ -1,6 +1,6 @@
 {
 	"name": "yalesyncalarm",
-	"version": "2.0.4",
+	"version": "2.1.0",
 	"description": "Yale Sync Smart Home Alarm System API for Node.js, written in Typescript.",
 	"main": "./dist/Yale.js",
 	"types": "./dist/Yale.d.ts",
@@ -18,7 +18,7 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/jonathandann/yalealarmsystem.git"
+		"url": "git@github.com:JagCesar/yalesyncalarm.git"
 	},
 	"keywords": [
 		"Yale",
@@ -28,9 +28,9 @@
 	"author": "Jonathan Dann",
 	"license": "MIT",
 	"bugs": {
-		"url": "https://github.com/jonathandann/yalealarmsystem/issues"
+		"url": "https://github.com/JagCesar/yalesyncalarm/issues"
 	},
-	"homepage": "https://github.com/jonathandann/yalealarmsystem/#readme",
+	"homepage": "https://github.com/JagCesar/yalesyncalarm/#readme",
 	"dependencies": {
 		"@types/node-fetch": "^2.5.4",
 		"await-lock": "^2.0.1",
