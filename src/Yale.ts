@@ -50,6 +50,8 @@ namespace API {
 		panelMode = 'api/panel/mode',
 		deviceStatus = 'api/panel/device_status',
 		services = 'services',
+		unlock = 'api/minigw/unlock/',
+		deviceControl = 'api/panel/device_control/'
 	}
 
 	function url(path: Path): string {
@@ -106,6 +108,34 @@ namespace API {
 				'Content-Type': 'application/x-www-form-urlencoded ; charset=utf-8',
 			},
 		})
+	}
+
+	export async function setLockState(
+		accessToken: string,
+		doorLock: DoorLock,
+		pincode: string,
+		mode: DoorLock.State
+	): Promise<NodeFetch.Response> {
+		switch (mode) {
+			case 0:
+				return await NodeFetch.default(url(Path.deviceControl), {
+					method: 'POST',
+					body: `area=${doorLock.area}&zone=${doorLock.zone}&device_sid=${doorLock.sid}&device_type=${doorLock.type}&request_value=1`,
+					headers: {
+						Authorization: `Bearer ${accessToken}`,
+						'Content-Type': 'application/x-www-form-urlencoded ; charset=utf-8',
+					},
+				})
+			default:
+				return await NodeFetch.default(url(Path.unlock), {
+					method: 'POST',
+					body: `area=${doorLock.area}&zone=${doorLock.zone}$pincode=${pincode}`,
+					headers: {
+						Authorization: `Bearer ${accessToken}`,
+						'Content-Type': 'application/x-www-form-urlencoded ; charset=utf-8',
+					},
+				})
+		}
 	}
 
 	export async function getDevices(
@@ -260,6 +290,7 @@ function deviceToSensor(value: JSONDecoders.Device): Sensor | undefined {
 				value.area,
 				value.zone,
 				value.sid,
+				value.type,
 				parseLockedState(value.status),
 			)
 		default:
@@ -290,6 +321,26 @@ async function setMode(
 		JSONDecoders.panelSetDecoder,
 		(value: JSONDecoders.PanelSetResponse) => {
 			if (value.acknowledgement === 'OK') {
+				return mode
+			} else {
+				throw new Error('Something went wrong.')
+			}
+		}
+	)
+}
+
+async function setLockState(
+	accessToken: AccessToken,
+	doorLock: DoorLock,
+	pincode: string,
+	mode: DoorLock.State,
+): Promise<DoorLock.State> {
+	let response = await API.setLockState(accessToken.token, doorLock, pincode, mode)
+	return processResponse(
+		response,
+		JSONDecoders.doorLockSetDecoder,
+		(value: JSONDecoders.DoorLockSetResponse) => {
+			if (value.code === '000') {
 				return mode
 			} else {
 				throw new Error('Something went wrong.')
@@ -409,6 +460,17 @@ export class Yale {
 				)
 				return panelState
 			}
+		})
+	}
+
+	public async setDoorLockState(doorLock: DoorLock, pincode: string, targetState: DoorLock.State): Promise<DoorLock.State> {
+		return await lock(this._lock, async () => {
+			const accessToken = await authenticate(this._username, this._password)
+			const state = await setLockState(accessToken, doorLock, pincode, targetState)
+
+			await this.updateDoorLock(doorLock)
+
+			return state
 		})
 	}
 

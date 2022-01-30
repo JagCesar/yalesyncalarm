@@ -85,6 +85,7 @@ export class DoorLock implements Device {
 		readonly area: string,
 		readonly zone: string,
 		readonly sid: string,
+		readonly type: string,
 		readonly state: DoorLock.State,
 	) {}
 }

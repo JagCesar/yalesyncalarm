@@ -90,6 +90,15 @@ export namespace JSONDecoders {
 		object(['cmd_ack', string()], acknowledgement => ({ acknowledgement }))
 	)
 
+	export interface DoorLockSetResponse {
+		code: string
+	}
+
+	export const doorLockSetDecoder: Decoder<DoorLockSetResponse> = object(
+		['code', string()],
+		(code) => ({ code })
+	)
+
 	export interface PanelGetResponse {
 		area: string
 		mode: string
