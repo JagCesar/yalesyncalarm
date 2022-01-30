@@ -82,7 +82,10 @@ export class DoorLock implements Device {
 	public constructor(
 		readonly identifier: string,
 		readonly name: string,
-		readonly state: DoorLock.State
+		readonly area: string,
+		readonly zone: string,
+		readonly sid: string,
+		readonly state: DoorLock.State,
 	) {}
 }
 

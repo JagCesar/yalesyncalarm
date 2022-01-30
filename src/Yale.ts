@@ -257,7 +257,10 @@ function deviceToSensor(value: JSONDecoders.Device): Sensor | undefined {
 			return new DoorLock(
 				value.identifier,
 				value.name,
-				parseLockedState(value.status)
+				value.area,
+				value.zone,
+				value.sid,
+				parseLockedState(value.status),
 			)
 		default:
 			return undefined

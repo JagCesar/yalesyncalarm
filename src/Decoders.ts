@@ -47,6 +47,9 @@ export namespace JSONDecoders {
 	export interface Device {
 		identifier: string
 		name: string
+		area: string
+		zone: string
+		sid: string
 		type: string
 		status: string
 	}
@@ -57,9 +60,12 @@ export namespace JSONDecoders {
 			object(
 				['device_id', string()],
 				['name', string()],
+				['area', string()],
+				['no', string()],
+				['address', string()],
 				['type', string()],
 				['status1', string()],
-				(identifier, name, type, status) => ({ identifier, name, type, status })
+				(identifier, name, area, zone, sid, type, status) => ({ identifier, name, area, zone, sid, type, status })
 			)
 		)
 	)
