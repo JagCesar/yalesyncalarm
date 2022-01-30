@@ -113,6 +113,7 @@ namespace API {
 	export async function setLockState(
 		accessToken: string,
 		doorLock: DoorLock,
+		pincode: string,
 		mode: DoorLock.State
 	): Promise<NodeFetch.Response> {
 		switch (mode) {
@@ -128,7 +129,7 @@ namespace API {
 			default:
 				return await NodeFetch.default(url(Path.unlock), {
 					method: 'POST',
-					body: `area=${doorLock.area}&zone=${doorLock.zone}$pincode=${this._pincode}`,
+					body: `area=${doorLock.area}&zone=${doorLock.zone}$pincode=${pincode}`,
 					headers: {
 						Authorization: `Bearer ${accessToken}`,
 						'Content-Type': 'application/x-www-form-urlencoded ; charset=utf-8',
@@ -331,9 +332,10 @@ async function setMode(
 async function setLockState(
 	accessToken: AccessToken,
 	doorLock: DoorLock,
+	pincode: string,
 	mode: DoorLock.State,
 ): Promise<DoorLock.State> {
-	let response = await API.setLockState(accessToken.token, doorLock, mode)
+	let response = await API.setLockState(accessToken.token, doorLock, pincode, mode)
 	return processResponse(
 		response,
 		JSONDecoders.doorLockSetDecoder,
@@ -465,7 +467,7 @@ export class Yale {
 	public async setDoorLockState(doorLock: DoorLock, targetState: DoorLock.State): Promise<DoorLock.State> {
 		return await lock(this._lock, async () => {
 			const accessToken = await authenticate(this._username, this._password)
-			const state = await setLockState(accessToken, doorLock, targetState)
+			const state = await setLockState(accessToken, doorLock, this._pincode, targetState)
 
 			await this.updateDoorLock(doorLock)
 
