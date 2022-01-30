@@ -343,7 +343,7 @@ async function setLockState(
 			if (value.code === '000') {
 				return mode
 			} else {
-				throw new Error('Something went wrong.')
+				throw new Error('Something went wrong. Code: ' + value.code)
 			}
 		}
 	)
