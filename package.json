@@ -1,6 +1,6 @@
 {
 	"name": "@jagcesar/yalesyncalarm",
-	"version": "2.1.6",
+	"version": "2.1.7",
 	"description": "Yale Sync Smart Home Alarm System API for Node.js, written in Typescript.",
 	"main": "./dist/Yale.js",
 	"types": "./dist/Yale.d.ts",
