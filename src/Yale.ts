@@ -115,69 +115,45 @@ namespace API {
 		doorLock: DoorLock,
 		mode: DoorLock.State
 	): Promise<NodeFetch.Response> {
+		let value = 0
 		switch (mode) {
 			case 0:
-				return await NodeFetch.default(url(Path.deviceControl), {
-					method: 'POST',
-					body: `
---boundary
-Content-Disposition: form-data; name="area"
-
-${doorLock.area}
---boundary
-Content-Disposition: form-data; name="zone"
-
-${doorLock.zone}
---boundary
-Content-Disposition: form-data; name="device_sid"
-
-${doorLock.sid}
---boundary
-Content-Disposition: form-data; name="device_type"
-
-${doorLock.type}
---boundary
-Content-Disposition: form-data; name="request_value"
-
-1
---boundary--
-					`,
-					headers: {
-						Authorization: `Bearer ${accessToken}`,
-						'Content-Type': 'multipart/form-data; boundary=boundary',
-					},
-				})
+				value = 1;
 			default:
-				return await NodeFetch.default(url(Path.deviceControl), {
-					method: 'POST',
-					body: `
---boundary
-Content-Disposition: form-data; name="area"
-
-${doorLock.area}
---boundary
-Content-Disposition: form-data; name="zone"
-
-${doorLock.zone}
---boundary
-Content-Disposition: form-data; name="device_sid"
-
-${doorLock.sid}
---boundary
-Content-Disposition: form-data; name="device_type"
-
-${doorLock.type}
---boundary
-Content-Disposition: form-data; name="request_value"
-
-0
---boundary--`,
-					headers: {
-						Authorization: `Bearer ${accessToken}`,
-						'Content-Type': 'multipart/form-data; boundary=boundary',
-					},
-				})
+				value = 0;
 		}
+
+		let body =
+`--boundary\n
+Content-Disposition: form-data; name="area"\n
+\n
+${doorLock.area}\n
+--boundary\n
+Content-Disposition: form-data; name="zone"\n
+\n
+${doorLock.zone}\n
+--boundary\n
+Content-Disposition: form-data; name="device_sid"\n
+\n
+${doorLock.sid}\n
+--boundary\n
+Content-Disposition: form-data; name="device_type"\n
+\n
+${doorLock.type}\n
+--boundary\n
+Content-Disposition: form-data; name="request_value"\n
+\n
+${value}\n
+--boundary--\n
+`
+		return await NodeFetch.default(url(Path.deviceControl), {
+			method: 'POST',
+			body: body,
+			headers: {
+				Authorization: `Bearer ${accessToken}`,
+				'Content-Type': 'multipart/form-data; boundary=boundary',
+			},
+		})
 	}
 
 	export async function getDevices(
