@@ -123,36 +123,13 @@ namespace API {
 				value = 0;
 		}
 
-		let body =
-`--boundary\n
-Content-Disposition: form-data; name="area"\n
-\n
-${doorLock.area}\n
---boundary\n
-Content-Disposition: form-data; name="zone"\n
-\n
-${doorLock.zone}\n
---boundary\n
-Content-Disposition: form-data; name="device_sid"\n
-\n
-${doorLock.sid}\n
---boundary\n
-Content-Disposition: form-data; name="device_type"\n
-\n
-${doorLock.type}\n
---boundary\n
-Content-Disposition: form-data; name="request_value"\n
-\n
-${value}\n
---boundary--`
-		return await NodeFetch.default(url(Path.deviceControl), {
-			method: 'POST',
-			body: body,
-			headers: {
-				Authorization: `Bearer ${accessToken}`,
-				'Content-Type': 'multipart/form-data; boundary=boundary',
-				'Content-Length': '374',
+		return NodeFetch.default(url(Path.deviceControl), {
+			"method": "POST",
+			"headers": {
+					"Authorization": `Bearer ${accessToken}`,
+					"Content-Type": "multipart/form-data; boundary=boundary"
 			},
+			"body": `--boundary\r\nContent-Disposition: form-data; name=\"area\"\r\n\r\n${doorLock.area}\r\n--boundary\r\nContent-Disposition: form-data; name=\"zone\"\r\n\r\n${doorLock.zone}\r\n--boundary\r\nContent-Disposition: form-data; name=\"device_sid\"\r\n\r\n${doorLock.sid}\r\n--boundary\r\nContent-Disposition: form-data; name=\"device_type\"\r\n\r\n${doorLock.type}\r\n--boundary\r\nContent-Disposition: form-data; name=\"request_value\"\r\n\r\n${value}\r\n--boundary--\r\n`
 		})
 	}
 
