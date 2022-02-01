@@ -32,9 +32,9 @@
 	},
 	"homepage": "https://github.com/JagCesar/yalesyncalarm/#readme",
 	"dependencies": {
-		"@types/node": "^17.0.14",
+		"@types/node-fetch": "^2.5.4",
 		"await-lock": "^2.0.1",
-		"node-fetch": "^3.0.0",
+		"node-fetch": "^1.7.3",
 		"type-safe-json-decoder": "^0.2.0"
 	},
 	"devDependencies": {
