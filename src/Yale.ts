@@ -144,14 +144,14 @@ ${doorLock.type}\n
 Content-Disposition: form-data; name="request_value"\n
 \n
 ${value}\n
---boundary--\n
-`
+--boundary--`
 		return await NodeFetch.default(url(Path.deviceControl), {
 			method: 'POST',
 			body: body,
 			headers: {
 				Authorization: `Bearer ${accessToken}`,
 				'Content-Type': 'multipart/form-data; boundary=boundary',
+				'Content-Length': '374',
 			},
 		})
 	}
